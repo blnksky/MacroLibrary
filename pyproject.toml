@@ -9,6 +9,7 @@ dependencies = [
     "requests>=2.31.0",
     "ahk>=1.8.0",
     "pynput>=1.7.6",
+    "pygetwindow"
 ]
 
 [tool.setuptools_scm]
