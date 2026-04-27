@@ -3,6 +3,6 @@ name = "MacroLibrary"
 version = "0.1.0"
 dependencies = [
     "requests>=2.31.0",
-    "ahk==1.8.5",
+    "ahk>=1.8.0",
     "pynput>=1.7.6",
 ]
