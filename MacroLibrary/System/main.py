@@ -85,3 +85,5 @@ class Sys:
 # sys binds
 Sys.sysbinds.add(Input.Bind("F12" , lambda id : Sys.exit()))
 Sys.sysbinds.add(Input.Bind("F1" , lambda id : Sys.toggle()))
+
+__all__ = ["Sys"]
