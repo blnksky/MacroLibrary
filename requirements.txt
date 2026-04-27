@@ -1,8 +1,9 @@
 # packaging tools
 setuptools>=68.0.0
 
-# AutoHotkey bridge for Python
+# input control
 ahk==1.8.5
+pynput>=1.7.6
 
 # External system dependency (NOT pip-managed)
 # AutoHotkey v2.x must be installed separately:
