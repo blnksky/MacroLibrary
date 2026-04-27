@@ -1,0 +1,7 @@
+# Python dependencies
+pynput>=1.7
+ahk>=0.13
+
+# External system dependency (NOT pip-managed)
+# AutoHotkey v2.x must be installed separately:
+# https://www.autohotkey.com/
