@@ -1,7 +1,7 @@
 # commons
-from .MacroLibrary.imports import *
-from .MacroLibrary.types import *
-from .MacroLibrary.common import *
+from .imports import *
+from .types import *
+from .common import *
 
 # modules
 from .Structures import *
