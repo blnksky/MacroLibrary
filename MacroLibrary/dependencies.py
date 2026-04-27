@@ -1,5 +1,3 @@
-success = True
-
 try:
     import subprocess
     import sys
@@ -56,10 +54,4 @@ try:
                         pip_install(line)
 
     ensure_dependencies()
-except:
-    success = False
-    raise
-
-if not success:
-    import time
-    time.sleep(10)
+except: input(); raise

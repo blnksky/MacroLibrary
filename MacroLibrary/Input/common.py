@@ -1,4 +1,4 @@
-from common import *
+from MacroLibrary.common import *
 from Structures import *
 from pynput import keyboard, mouse
 

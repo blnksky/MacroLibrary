@@ -1,4 +1,4 @@
-import dependencies
+import MacroLibrary.dependencies as dependencies
 from setuptools import setup, find_packages
 
 setup(
