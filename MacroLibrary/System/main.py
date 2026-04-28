@@ -32,7 +32,7 @@ class Sys:
         print("-- system " + ("enabled" if state else "disabled") + " --")
 
     @classmethod
-    def load(cls , build : BuildData):
+    def load(cls , build : BuildData = {}):
         print("loading build...")
         for cid , category in build.items():
             f = cls.keybinds.get(cid)
