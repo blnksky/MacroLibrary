@@ -3,19 +3,19 @@ from .common import *
 P = ParamSpec("P")
 G = ParamSpec("G")
 class Event(Generic[P]):
-    _call : Callable[P , bool]
+    guard : Callable[P , bool]
     _connections : Set[Connection[P]]
     _tEvent : threading.Event
     _waiting : Dict[Thread , Tuple[Any , ...] | bool]
 
-    def __init__(self , call : Callable[P , bool] = lambda *args : True) -> None:
-        self._call = call
+    def __init__(self , guard : Callable[P , bool] = lambda *args : True) -> None:
+        self.guard = guard
         self._connections = set()
         self._tEvent = threading.Event()
         self._waiting = {}
 
     def __call__(self, *args : P.args , **kwargs : P.kwargs) -> bool:
-        if not self._call(*args , **kwargs) : return False
+        if not self.guard(*args , **kwargs) : return False
         
         for t , v in self._waiting.items():
             if v != False : continue
@@ -29,31 +29,31 @@ class Event(Generic[P]):
         return True
 
     class Connection(Generic[G]):
-        _call : Callable[G]
+        guard : Callable[G]
         event : Event[G]
         def __init__(self , event : Event[G] , call : Callable[G]) -> None:
-            self._call = call
+            self.guard = call
             self.event = event
             event._connections.add(self)
 
         def __call__(self , *args : G.args , **kwargs : G.kwargs) -> Any:
-            return self._call(*args , **kwargs)
+            return self.guard(*args , **kwargs)
         
         def disconnect(self) -> Callable[G]:
             self.event._connections.remove(self)
-            return self._call
+            return self.guard
         
     def connect(self , call : Callable[P]) -> Connection[P]:
         return self.Connection(self , call)
     
     def once(self , call : Callable[P]) -> Connection[P]:
         con = self.Connection(self , call)
-        call = con._call
+        call = con.guard
 
         def f(*args , **kwargs):
             con.disconnect()
             return call(*args , **kwargs)
-        con._call = f
+        con.guard = f
         
         return con
     

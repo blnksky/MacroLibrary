@@ -72,7 +72,7 @@ class InputConnection(Set[InputBind]):
         self.active = True
 
         id = self.id
-        down._call(id)
+        down.guard(id)
 
         block = False
         for b in sorted(self , key = lambda b: len(b.input) , reverse = True):
@@ -89,7 +89,7 @@ class InputConnection(Set[InputBind]):
         self.active = False
 
         id = self.id
-        up._call(id)
+        up.guard(id)
 
 Bind = InputBind
 __all__ = ["Bind"]
