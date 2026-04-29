@@ -42,15 +42,14 @@ def wait(id : InputId , timeout : int | None = None , pressed : bool | None = No
     """
     if pressed == get(id): return True
     elif pressed == None: pressed = not get(id)
-
-    waiting = True
-    def f(): waiting = False
-    if timeout != None: delay(f , timeout)
-
     event = down if pressed else up
-    while waiting:
-        if event.wait() == id: return True
 
+    ts = None
+    if timeout != None:
+        ts = now() + timeout
+        while now() < ts and event.wait(ts - now()) != id: pass
+    else:
+        while event.wait() != id: pass
     return get(id)
 
 def start():
