@@ -1,8 +1,10 @@
 from ..common import *
 from ..Structures import *
 from pynput import keyboard, mouse
+from collections import deque
 
 active : Set[InputId] = set()
+sent = deque(maxlen = 5)
 
 T = TypeVar("T" , bound = InputSig)
 def normalize(i : T) -> T:
@@ -25,4 +27,5 @@ def send(sig : InputSig):
         for i in range(length) : send(sig[length - i] + " Down"); sleep()
         for i in range(length) : send(sig[i] + " Up"); sleep()
         return
+    sent.append(normalize(sig))
     AHK.send_input("{" + sig + "}")

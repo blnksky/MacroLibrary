@@ -9,11 +9,19 @@ def update(id : InputId , incr : int):
     if inputStates[id] < 0: inputStates[id] = 0
     if inputStates[id] > 1: inputStates[id] = 1
 
+def check(id : InputId):
+    id = normalize(id)
+    if not id in sent: return True
+    sent.remove(id)
+    return False
+
 def _downCall(id : InputId):
+    if not check(id): return False
     update(id , 1)
     return True
 
 def _upCall(id : InputId):
+    if not check(id): return False
     update(id , -1)
     return True
 
