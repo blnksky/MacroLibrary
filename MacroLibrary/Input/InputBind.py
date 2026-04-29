@@ -57,6 +57,7 @@ class InputConnection(Set[InputBind]):
     def __init__(self, id : InputId):
         super().__init__()
         self.id = normalize(id)
+        self.active = False
 
         def errorHandler(msg : str , e : Exception):
             print("something went wrong at keybind " + self.id + " : " + msg)
