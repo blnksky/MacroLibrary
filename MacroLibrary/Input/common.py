@@ -11,9 +11,9 @@ def normalize(i : T) -> T:
         for n in range(len(l)) : l[n] = normalize(l[n])
         i = tuple(l)
         return i
-
-    for m in [" Down" , " Up" , "{" , "}" , "~" , "!" , "$" , "^" , "_l" , "_r"] : i = re.sub(m , "" , i)
-    return i.lower()
+    i = i.lower()
+    for m in [" down" , " up" , "{" , "}" , "~" , "!" , "$" , "^" , "_l" , "_r"] : i = re.sub(m , "" , i)
+    return i
 
 def send(sig : InputSig):
     """

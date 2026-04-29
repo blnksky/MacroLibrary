@@ -22,7 +22,7 @@ class Sys:
         win = pygetwindow.getActiveWindow()
         if win != None: win = win.title
         print("active window:" , win)
-        if cls.appId != None and (win == None or win.title != cls.appId): state = False
+        if cls.appId != None and (win == None or win != cls.appId): state = False
 
         cls.state = state
 
