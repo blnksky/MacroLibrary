@@ -19,7 +19,8 @@ class InputBind:
         for i in self.normInput:
             if i != id and not get(i): return False
 
-        self.thread = threading.Thread(target = lambda: self.call(id)).start()
+        self.thread = threading.Thread(target = lambda: self.call(id))
+        self.thread.start()
         return True
 
     def __init__(self , input : InputId | InputSig , call : Callable[[InputId]]):
@@ -43,8 +44,10 @@ class InputBind:
         self.enabled = enabled
 
 class InputConnection(Set[InputBind]):
-    id : InputId
     elements = InputBind.connections
+
+    id : InputId
+    active : bool
 
     @classmethod
     def get(cls , id : InputId):
@@ -53,27 +56,39 @@ class InputConnection(Set[InputBind]):
 
     def __init__(self, id : InputId):
         super().__init__()
-        self.id = id
+        self.id = normalize(id)
 
         def errorHandler(msg : str , e : Exception):
             print("something went wrong at keybind " + self.id + " : " + msg)
             raise e
         
         # establish AHK callback chain
-        AHK.add_hotkey("$*" + self.id , lambda: self() , errorHandler)
+        AHK.add_hotkey("$*" + self.id , lambda: self.down() , errorHandler)
+        AHK.add_hotkey("$*~" + self.id + " Up" , lambda: self.up() , errorHandler)
 
-    def __call__(self):
-        id = normalize(self.id)
+    def down(self):
+        if self.active: return
+        self.active = True
+
+        id = self.id
+        down._call(id)
+
         block = False
         for b in sorted(self , key = lambda b: len(b.input) , reverse = True):
             if not b(id): continue
             block = not b.block
             break
-        if block: return
-
-        send(id + " Down")
+        
+        if not block: send(id + " Down")
         wait(id)
-        send(id + " Up")
+        if not block: send(id + " Up")
+
+    def up(self):
+        if not self.active: return
+        self.active = False
+
+        id = self.id
+        up._call(id)
 
 Bind = InputBind
 __all__ = ["Bind"]

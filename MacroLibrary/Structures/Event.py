@@ -8,7 +8,7 @@ class Event(Generic[P]):
     _tEvent : threading.Event
     _waiting : Dict[Thread , Tuple[Any , ...] | bool]
 
-    def __init__(self , call : Callable[P , bool] = lambda *args : bool(True)) -> None:
+    def __init__(self , call : Callable[P , bool] = lambda *args : True) -> None:
         self._call = call
         self._connections = set()
         self._tEvent = threading.Event()

@@ -1,60 +1,36 @@
 from .common import *
 from .Event import Event
 
-class State(Event[bool]):
-    _state : int
-    _buffer : int
-    _threads : Set[Thread]
-    _threadEvent : threading.Event
-    _bufferQueue : List[Callable[[bool]]]
+class State(Event):
+    value : int
+    update : Event[int]
+    buffer : int | None
 
-    def __init__(self , buffer : int = 0):
-        super().__init__()
-        self._state = 0
-        self._buffer = buffer
-        self._threadEvent = threading.Event()
-        self._bufferQueue = list()
+    def __init__(self, buffer : int | None = None , call: Callable[..., bool] = lambda *args: True) -> None:
+        super().__init__(call)
+        self.value = 0
+        self.update = Event(lambda i: self._update(i))
+        self.buffer = buffer
 
-    def __call__(self, *args):
-        return self._state > 0
+    def __call__(self) -> bool:
+        return self.value > 0
     
-    def update(self , increment : int = 0) -> bool:
-        """
-        Changes the state representative value by an increment
-        value > 0 is the bool equivalent to the state
-        """
-
-        self._state += increment
-        if self(): self._threadEvent.set()
-        else: self._threadEvent.clear()
+    def _update(self , increment : int):
+        self.value += increment
         super().__call__(self())
-        if not self() : return False
-
-        if len(self._bufferQueue) > 0 : delay(self._bufferQueue.pop(0) , self._buffer)
         return True
-    
-    def wait(self , timeout : int | None) -> bool:
-        """
-        Yields the current thread for timeout milliseconds until either state becomes true or timeout occurs, then returns current state.
-        """
 
+    def wait(self , timeout : int | None = None):
+        waiting = True
+        if timeout == None: timeout = self.buffer
 
-        if self() : return self()
+        def f(): waiting = False
+        if timeout != None: delay(f , timeout)
 
-        if timeout == None : timeout = self._buffer
-        self._threadEvent.wait(timeout / 1000)
-
-        return self()
-
-    def queue(self , call : Callable) -> bool:
-        if self._buffer <= 0 : return False
-
-        self._bufferQueue.insert(0 , call)
-        def callback():
-            try: self._bufferQueue.remove(call)
-            except: pass
-        delay(callback , self._buffer)
-
-        return True
+        r = False
+        while waiting :
+            r = super().wait()
+            if r: break
+        return r
 
 __all__ = ["State"]

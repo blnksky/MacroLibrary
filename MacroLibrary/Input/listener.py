@@ -17,13 +17,8 @@ def _upCall(id : InputId):
     update(id , -1)
     return True
 
-def wait(id : InputId , timeout : int | None = None , down : bool = False):
-    """
-    Yields the current thread until input 'id' changes to the logical state, by default up
-    """
-
-    AHK.key_wait(key_name = id , timeout = timeout , logical_state = down)
-    return False
+down = Event(_downCall)
+up = Event(_upCall)
 
 def get(id : InputId):
     """
@@ -33,9 +28,23 @@ def get(id : InputId):
     v = inputStates.get(id)
     return v != None and v > 0
 
+def wait(id : InputId , timeout : int | None = None , pressed : bool | None = None):
+    """
+    Yields the current thread until input 'id' changes to the logical state, by default up
+    """
+    if pressed == get(id): return True
+    elif pressed == None: pressed = not get(id)
 
-down = Event(_downCall)
-up = Event(_upCall)
+    waiting = True
+    def f(): waiting = False
+    if timeout != None: delay(f , timeout)
+
+    event = down if pressed else up
+    while waiting:
+        if event.wait() == id: return True
+
+    return get(id)
+
 def start():
     def getKey(io : keyboard.Key | keyboard.KeyCode | None) -> str:
         if io == None: return ""
