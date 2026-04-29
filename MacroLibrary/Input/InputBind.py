@@ -77,12 +77,13 @@ class InputConnection(Set[InputBind]):
         block = False
         for b in sorted(self , key = lambda b: len(b.input) , reverse = True):
             if not b(id): continue
-            block = not b.block
+            block = b.block
             break
+        if block: return
         
-        if not block: send(id + " Down")
+        send(id + " Down")
         wait(id)
-        if not block: send(id + " Up")
+        send(id + " Up")
 
     def up(self):
         if not self.active: return
