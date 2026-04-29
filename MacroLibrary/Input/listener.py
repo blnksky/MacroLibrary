@@ -50,7 +50,7 @@ def wait(id : InputId , timeout : int | None = None , pressed : bool | None = No
         while now() < ts and event.wait(ts - now()) != id: pass
     else:
         while event.wait() != id: pass
-    return get(id)
+    return get(id) == pressed
 
 def start():
     def getKey(io : keyboard.Key | keyboard.KeyCode | None) -> str:
