@@ -15,7 +15,7 @@ class State(Event):
     def __call__(self) -> bool:
         return self.value > 0
     
-    def _update(self , increment : int):
+    def _update(self , increment : int = 0):
         self.value += increment
         super().__call__(self())
         return True
