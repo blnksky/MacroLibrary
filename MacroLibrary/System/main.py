@@ -20,9 +20,9 @@ class Sys:
 
         # check active window
         win = pygetwindow.getActiveWindow()
-        if win != None: win = win.title
+        if win != None: win = win.title()
         print("active window:" , win)
-        if cls.appId != None and (win == None or win != cls.appId): state = False
+        if cls.appId != None and (win != None and win != cls.appId): state = False
 
         cls.state = state
 
