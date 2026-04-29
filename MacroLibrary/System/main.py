@@ -9,7 +9,7 @@ class _Keybinds(Dict[str , Dict[str , KeybindEntry | Dict[str , KeybindEntry]]])
 class Sys:
     state = False
     keybinds = _Keybinds()
-    callbinds = Dict[str , Input.Bind]
+    callbinds : Dict[str , Input.Bind] = {}
     appId : str | None = None
     loaded : bool = False
     sysbinds : Set[Input.Bind] = set()
@@ -26,10 +26,10 @@ class Sys:
 
         cls.state = state
 
-        for e in Input.Bind.elements:
+        for _ , e in cls.callbinds.items():
             if e in cls.sysbinds: e.toggle(True); continue
             e.toggle(state)
-        print("-- system " + ("enabled" if state else "disabled") + " --")
+        print("-- system " + ("enabled" if cls.state else "disabled") + " --")
 
     @classmethod
     def load(cls , build : Dict = {}):
@@ -43,12 +43,13 @@ class Sys:
             if category == True or isinstance(category , str):
                 f = f.get(category) if isinstance(category , str) else f if category == True else None
                 if f == None : continue
-                print("    group:" , category if isinstance(category , str) else None)
-                if not isinstance(f , dict) : return
-                
+
+                print("    group:" , category if isinstance(category , str) else "")
+
+                if not isinstance(f , dict): return
                 for id , (input , call) in f.items():
                     if not isinstance(call , Callable): continue
-                    Input.Bind(input , call)
+                    cls.callbinds[id] = Input.Bind(input , call)
                 
             elif isinstance(category , list):
                 print("    list: ")
@@ -61,7 +62,6 @@ class Sys:
 
                     for id , (input , call) in f.items() : Input.Bind(input , call)
         
-        cls.toggle()
         AHK.start_hotkeys()
         for e in cls.sysbinds: e.toggle(True)
 
