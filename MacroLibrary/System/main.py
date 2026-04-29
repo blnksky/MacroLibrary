@@ -49,6 +49,7 @@ class Sys:
                 if not isinstance(f , dict): return
                 for id , (input , call) in f.items():
                     if not isinstance(call , Callable): continue
+                    print("      " + id + ":" , input)
                     cls.callbinds[id] = Input.Bind(input , call)
                 
             elif isinstance(category , list):
@@ -60,7 +61,9 @@ class Sys:
                     print("      group: " + e)
                     if not isinstance(f , dict) : return
 
-                    for id , (input , call) in f.items() : Input.Bind(input , call)
+                    for id , (input , call) in f.items():
+                        print("        " + id + ":" , input)
+                        Input.Bind(input , call)
         
         AHK.start_hotkeys()
         for e in cls.sysbinds: e.toggle(True)
