@@ -1,13 +1,13 @@
 from .common import *
 import pygetwindow
 
-class _Keybinds(Dict[str , Dict[str , KeybindEntry | Dict[str , KeybindEntry]]]):
+class _Keybinds(Dict[str , Set[KeybindEntry | Set[KeybindEntry]]]):
     def update(self , category : str | Literal["default"] , id : str , input : InputSig , call : Callable[[InputId]]):
         if not self.get(category) : self[category] = {}
-        self[category][id] = (input , call)
+        self[category].add((input , call))
 
 class Sys:
-    state = False
+    state = State()
     keybinds = _Keybinds()
     callbinds : Dict[str , Input.Bind] = {}
     appId : str | None = None
@@ -16,7 +16,7 @@ class Sys:
 
     @classmethod
     def toggle(cls , state : bool | None = None):
-        if state == None: state = not cls.state
+        if state == None: state = not cls.state()
 
         # check active window
         win = pygetwindow.getActiveWindow()
@@ -24,12 +24,12 @@ class Sys:
         print("active window:" , win)
         if cls.appId != None and (win != None and str(win) != cls.appId): state = False
 
-        cls.state = state
+        cls.state.update(1 if state else -1)
 
         for _ , e in cls.callbinds.items():
             if e in cls.sysbinds: e.toggle(True); continue
             e.toggle(state)
-        print("-- system " + ("enabled" if cls.state else "disabled") + " --")
+        print("-- system " + ("enabled" if cls.state() else "disabled") + " --")
 
     @classmethod
     def load(cls , binds : Dict = {}):
@@ -90,5 +90,6 @@ class Sys:
 # sys binds
 Sys.sysbinds.add(Input.Bind("F12" , lambda id : Sys.exit()))
 Sys.sysbinds.add(Input.Bind("F1" , lambda id : Sys.toggle()))
+
 
 __all__ = ["Sys"]
