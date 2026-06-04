@@ -14,7 +14,7 @@ def sleep(dt : float = 0) -> None:
     """
     time.sleep(dt / 1000)
 
-def delay(callback = lambda : None , delay : int = 0):
+def delay(callback = lambda : None , delay : float = 0):
         """
         Run callback after delay as millisecond integer.
         """
@@ -23,7 +23,7 @@ def delay(callback = lambda : None , delay : int = 0):
         def wrapper():
             callback()
 
-        if delay > 0 : thread = threading.Timer(interval = float(delay) / 1000 , function = wrapper)
+        if delay > 0 : thread = threading.Timer(interval = delay / 1000 , function = wrapper)
         else: thread = threading.Thread(target = wrapper)
         thread.start()
         return thread
