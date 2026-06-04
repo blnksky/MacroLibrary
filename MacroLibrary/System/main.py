@@ -24,7 +24,7 @@ class Sys:
         print("active window:" , win)
         if cls.appId != None and (win != None and str(win) != cls.appId): state = False
 
-        cls.state.update(1 if state else -1)
+        cls.state.update(state)
 
         for e in cls.callbinds:
             if e in cls.sysbinds: e.toggle(True); continue
