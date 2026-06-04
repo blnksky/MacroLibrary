@@ -29,9 +29,7 @@ def sendEvent(sig : InputSig):
         for i in range(length) : sendEvent(sig[length - i] + " Down"); sleep()
         for i in range(length) : sendEvent(sig[i] + " Up"); sleep()
         return
-    
     AHK.send_input("{" + sig + "}")
-
 
 def send(sig : InputSig):
     """
@@ -47,4 +45,4 @@ def send(sig : InputSig):
     nsig = normalize(sig)
     sent.append(nsig)
     if re.search(r"up|down" , sig) == None: sent.append(nsig)
-    sendEvent(sig)
+    AHK.send_input("{" + sig + "}")

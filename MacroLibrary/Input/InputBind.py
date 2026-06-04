@@ -88,16 +88,16 @@ class InputConnection(Set[InputBind]):
             block = b.block
             break
         if block: return
-        
         sendEvent(id + " Down")
 
     def up(self):
         if not self.active: return
-        self.active = False
 
         id = self.id
         up.guard(id)
         sendEvent(id + " Up")
+        
+        self.active = False
 
 
 Bind = InputBind
