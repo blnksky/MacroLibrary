@@ -2,7 +2,7 @@ from .common import *
 import pygetwindow
 
 class _Keybinds(Dict[str , Dict[str , KeybindEntry | Dict[str , KeybindEntry]]]):
-    def update(self , category : str , id : str , input : InputSig , call : Callable[[InputId]]):
+    def update(self , category : str | Literal["default"] , id : str , input : InputSig , call : Callable[[InputId]]):
         if not self.get(category) : self[category] = {}
         self[category][id] = (input , call)
 
@@ -32,10 +32,12 @@ class Sys:
         print("-- system " + ("enabled" if cls.state else "disabled") + " --")
 
     @classmethod
-    def load(cls , build : Dict = {}):
-        print("loading build...")
-        for cid , category in build.items():
+    def load(cls , binds : Dict = {}):
+        print("loading binds...")
+        binds["default"] = True
+        for cid , category in binds.items():
             f = cls.keybinds.get(cid)
+
             if f == None or not isinstance(f , dict): continue
             if category == False or category == None: continue
 
