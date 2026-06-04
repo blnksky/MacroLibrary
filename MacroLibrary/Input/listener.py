@@ -74,50 +74,69 @@ def wait(id : InputId , timeout : int | None = None , pressed : bool | None = No
     
     return get(id) == pressed
 
-def start():
-    def getId(io : keyboard.Key | keyboard.KeyCode | mouse.Button | None) -> str:
-        if io == None: return ""
+keyboardListener : keyboard.Listener | None = None
+mouseListener : mouse.Listener | None = None
 
-        id : str = ""
-        if isinstance(io , keyboard.KeyCode): id = io.char if io.char != None else ""
-        elif isinstance(io , keyboard.Key): id = io.name
-        elif isinstance(io , mouse.Button): id = io.name
-        else: id = io
+class Listener:
+    keyboard : keyboard.Listener | None = None
+    mouse : mouse.Listener | None = None
+
+    @classmethod
+    def start(cls):
+        def getId(io : keyboard.Key | keyboard.KeyCode | mouse.Button | None) -> str:
+            if io == None: return ""
+
+            id : str = ""
+            if isinstance(io , keyboard.KeyCode): id = io.char if io.char != None else ""
+            elif isinstance(io , keyboard.Key): id = io.name
+            elif isinstance(io , mouse.Button): id = io.name
+            else: id = io
+            
+            trans = idTranslations.get(normalize(id))
+            if trans != None: id = trans
+
+            return normalize(id)
         
-        trans = idTranslations.get(normalize(id))
-        if trans != None: id = trans
+        def kdown(io : keyboard.Key | keyboard.KeyCode | None):
+            id = getId(io)
+            if id == "": return
+            down(id)
 
-        return normalize(id)
-    
-    def kdown(io : keyboard.Key | keyboard.KeyCode | None):
-        id = getId(io)
-        if id == "": return
-        down(id)
+        def kup(io : keyboard.Key | keyboard.KeyCode | None):
+            id = getId(io)
+            if id == "": return
+            up(id)
 
-    def kup(io : keyboard.Key | keyboard.KeyCode | None):
-        id = getId(io)
-        if id == "": return
-        up(id)
+        def mEvent(x , y , io : mouse.Button , state):
+            id = getId(io)
+            if id == "": return
+            down(id) if state else up(id)
 
-    def mEvent(x , y , io : mouse.Button , state):
-        id = getId(io)
-        if id == "": return
-        down(id) if state else up(id)
+        kl = keyboard.Listener(
+            on_press = kdown,
+            on_release = kup
+        )
+        cls.keyboard = kl
 
-    kl = keyboard.Listener(
-        on_press = kdown,
-        on_release = kup
-    )
+        ml = mouse.Listener(
+            on_click = mEvent
+        )
+        cls.mouse = ml
 
-    ml = mouse.Listener(
-        on_click = mEvent
-    )
+        threading.Thread(target = lambda: exitEvent.wait() or kl.stop()).start()
+        threading.Thread(target = lambda: kl.start()).start()
 
-    threading.Thread(target = lambda: exitEvent.wait() or kl.stop()).start()
-    threading.Thread(target = lambda: kl.start()).start()
+        threading.Thread(target = lambda: exitEvent.wait() or ml.stop()).start()
+        threading.Thread(target = lambda: ml.start()).start()
 
-    threading.Thread(target = lambda: exitEvent.wait() or ml.stop()).start()
-    threading.Thread(target = lambda: ml.start()).start()
-start()
+    @classmethod
+    def stop(cls):
+        if cls.keyboard != None:
+            cls.keyboard.stop()
+            cls.keyboard = None
+        if cls.mouse != None:
+            cls.mouse.stop()
+            cls.mouse = None
 
-__all__ = ["down" , "up" , "get" , "wait"]
+
+__all__ = ["down" , "up" , "get" , "wait" , "Listener"]

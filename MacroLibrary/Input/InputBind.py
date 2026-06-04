@@ -47,6 +47,7 @@ class InputConnection(Set[InputBind]):
     elements = InputBind.connections
 
     id : InputId
+    enabled : bool
     active : bool
 
     @classmethod
@@ -57,15 +58,24 @@ class InputConnection(Set[InputBind]):
     def __init__(self, id : InputId):
         super().__init__()
         self.id = normalize(id)
+        self.enabled = False
         self.active = False
 
-        def errorHandler(msg : str , e : Exception):
-            print("something went wrong at keybind " + self.id + " : " + msg)
-            raise e
+    def toggle(self , enabled):
+        if self.enabled == enabled: return
+        self.enabled = enabled
+
+        if enabled:
+            def errorHandler(msg : str , e : Exception):
+                print("something went wrong at keybind " + self.id + " : " + msg)
+                raise e
         
-        # establish AHK callback chain
-        AHK.add_hotkey("$*" + self.id , lambda: self.down() , errorHandler)
-        AHK.add_hotkey("$*" + self.id + " Up" , lambda: self.up() , errorHandler)
+            # establish AHK callback chain
+            AHK.add_hotkey("$*" + self.id , lambda: self.down() , errorHandler)
+            AHK.add_hotkey("$*" + self.id + " Up" , lambda: self.up() , errorHandler)
+        else:
+            AHK.remove_hotkey("$*" + self.id)
+            AHK.remove_hotkey("$*" + self.id + " Up")
 
     def down(self):
         if self.active: return
@@ -90,6 +100,7 @@ class InputConnection(Set[InputBind]):
         id = self.id
         up.guard(id)
         send(id + " Up")
+
 
 Bind = InputBind
 __all__ = ["Bind"]

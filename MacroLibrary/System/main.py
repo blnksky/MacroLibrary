@@ -29,6 +29,20 @@ class Sys:
         for e in cls.callbinds:
             if e in cls.sysbinds: e.toggle(True); continue
             e.toggle(state)
+        
+        for id , c in Input.Bind.connections.items():
+            match = False
+            for b in cls.sysbinds:
+                if b.normInput[0] != id: continue
+                match = True
+            if match: c.toggle(True); continue
+            c.toggle(state)
+        
+        if state:
+            Input.Listener.start()
+        else:
+            Input.Listener.stop()
+
         print("-- system " + ("enabled" if cls.state() else "disabled") + " --")
 
     @classmethod
@@ -75,6 +89,7 @@ class Sys:
         threading.Thread(target = lifeline).start()
 
         cls.loaded = True
+        cls.toggle(False)
         print("loading finished")
 
     @classmethod
