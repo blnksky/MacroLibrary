@@ -15,7 +15,7 @@ def normalize(i : T) -> T:
         return i
     
     i = i.lower()
-    i = re.sub(r" down| up|{|}|~|!|$|^|_l|_r" , "" , str(i))
+    i = re.sub(r" down| up|{|}|~|!|$|^" , "" , str(i)) # _l|_r
     
     return i
 
@@ -29,8 +29,11 @@ def send(sig : InputSig):
         for i in range(length) : send(sig[length - i] + " Down"); sleep()
         for i in range(length) : send(sig[i] + " Up"); sleep()
         return
-
+    
     nsig = normalize(sig)
-    if re.search(r"up|down" , sig.lower()) == None: sent.append(nsig)
+    if re.search("down" , sig.lower()) != None: nsig += " down"
+    elif re.search("up" , sig.lower()) != None: nsig += " up"
+
+    if re.search(r"up|down" , nsig) == None: sent.append(nsig)
     sent.append(nsig)
     AHK.send_input("{" + sig + "}")

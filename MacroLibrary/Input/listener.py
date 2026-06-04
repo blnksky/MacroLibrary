@@ -3,17 +3,27 @@ from .common import *
 inputStates : Dict[InputId , int] = {}
 
 idTranslations : Dict[InputId , InputId] = {
+    "shift" : "LShift",
+    "shift_l" : "LShift",
+    "shift_r" : "RShift",
+    "ctrl" : "LCtrl",
+    "ctrl_l" : "LCtrl",
+    "ctrl_r" : "RCtrl",
+    "alt" : "LAlt",
+    "alt_l" : "LAlt",
+    "alt_r" : "RAlt",
+
     "left" : "LButton",
     "right" : "RButton",
     "middle" : "MButton",
     "x1" : "XButton1",
-    "x2" : "XButton2"
+    "x2" : "XButton2",
 }
 
 def update(id : InputId , incr : int):
     if inputStates.get(id) == None: inputStates[id] = 0
     inputStates[id] += incr
-    #safety patch
+    #safety limiters
     if inputStates[id] < 0: inputStates[id] = 0
     if inputStates[id] > 1: inputStates[id] = 1
 
@@ -49,6 +59,7 @@ def wait(id : InputId , timeout : int | None = None , pressed : bool | None = No
     """
     Yields the current thread until input 'id' changes to the logical state, by default up
     """
+
     id = normalize(id)
     if pressed == get(id): return True
     elif pressed == None: pressed = not get(id)
@@ -60,6 +71,7 @@ def wait(id : InputId , timeout : int | None = None , pressed : bool | None = No
         while now() < ts and event.wait(ts - now()) != id: pass
     else:
         while event.wait() != id: pass
+    
     return get(id) == pressed
 
 def start():
@@ -67,8 +79,8 @@ def start():
         if io == None: return ""
 
         id : str = ""
-        if isinstance(io , keyboard.Key): id = io.name
-        elif isinstance(io , keyboard.KeyCode): id = io.char if io.char != None else ""
+        if isinstance(io , keyboard.KeyCode): id = io.char if io.char != None else ""
+        elif isinstance(io , keyboard.Key): id = io.name
         elif isinstance(io , mouse.Button): id = io.name
         else: id = io
         
@@ -93,8 +105,8 @@ def start():
         down(id) if state else up(id)
 
     kl = keyboard.Listener(
-        on_release = kup,
-        on_press = kdown
+        on_press = kdown,
+        on_release = kup
     )
 
     ml = mouse.Listener(

@@ -65,7 +65,7 @@ class InputConnection(Set[InputBind]):
         
         # establish AHK callback chain
         AHK.add_hotkey("$*" + self.id , lambda: self.down() , errorHandler)
-        AHK.add_hotkey("$*~" + self.id + " Up" , lambda: self.up() , errorHandler)
+        AHK.add_hotkey("$*" + self.id + " Up" , lambda: self.up() , errorHandler)
 
     def down(self):
         if self.active: return
@@ -82,8 +82,6 @@ class InputConnection(Set[InputBind]):
         if block: return
         
         send(id + " Down")
-        wait(id)
-        send(id + " Up")
 
     def up(self):
         if not self.active: return
@@ -91,6 +89,7 @@ class InputConnection(Set[InputBind]):
 
         id = self.id
         up.guard(id)
+        send(id + " Up")
 
 Bind = InputBind
 __all__ = ["Bind"]
