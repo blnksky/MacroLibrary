@@ -9,14 +9,13 @@ class InputBind:
     # instance property
     enabled : bool
     input : Tuple[InputId , ...]
-    normInput : Tuple[InputId , ...]
     block : bool
     call : Callable[[InputId]]
     thread : threading.Thread | None
 
     def __call__(self , id : InputId) -> bool:
         if not self.enabled or (self.thread != None and self.thread.is_alive()): return False
-        for i in self.normInput:
+        for i in self.input:
             if i != id and not get(i): return False
 
         self.thread = threading.Thread(target = lambda: self.call(id))
@@ -30,8 +29,7 @@ class InputBind:
 
         # instance properties
         self.enabled = False
-        self.input = input
-        self.normInput = normInput
+        self.input = normInput
         self.call = call
         self.thread = None
         self.block = re.match("~" , input[0]) == None

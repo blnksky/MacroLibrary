@@ -33,7 +33,7 @@ class Sys:
         for id , c in Input.Bind.connections.items():
             match = False
             for b in cls.sysbinds:
-                if b.normInput[0] != id: continue
+                if b.input[0] != id: continue
                 match = True
             if match: c.toggle(True); continue
             c.toggle(state)
