@@ -4,7 +4,7 @@ from pynput import keyboard, mouse
 from collections import deque
 
 active : Set[InputId] = set()
-sent = deque(maxlen = 5)
+sent = deque(maxlen = 64)
 
 T = TypeVar("T" , bound = InputSig)
 def normalize(i : T) -> T:
