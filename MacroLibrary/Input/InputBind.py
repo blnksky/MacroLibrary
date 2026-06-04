@@ -89,7 +89,7 @@ class InputConnection(Set[InputBind]):
             break
         if block: return
         
-        send(id + " Down")
+        sendEvent(id + " Down")
 
     def up(self):
         if not self.active: return
@@ -97,7 +97,7 @@ class InputConnection(Set[InputBind]):
 
         id = self.id
         up.guard(id)
-        send(id + " Up")
+        sendEvent(id + " Up")
 
 
 Bind = InputBind
