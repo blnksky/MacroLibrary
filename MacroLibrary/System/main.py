@@ -30,18 +30,11 @@ class Sys:
             if e in cls.sysbinds: e.toggle(True); continue
             e.toggle(state)
         
-        for id , c in Input.Bind.connections.items():
-            match = False
-            for b in cls.sysbinds:
-                if b.input[0] != id: continue
-                match = True
-            if match: c.toggle(True); continue
+        for id , c in Input.Connection.dict.items():
             c.toggle(state)
         
-        if state:
-            Input.Listener.start()
-        else:
-            Input.Listener.stop()
+        if not state:
+            for b in cls.sysbinds: Input.Connection.get(b.input[0]).toggle(True)
 
         print("-- system " + ("enabled" if cls.state() else "disabled") + " --")
 
