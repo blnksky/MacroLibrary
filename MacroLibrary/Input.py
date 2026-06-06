@@ -209,7 +209,6 @@ class InputConnection(Set[Bind]):
     def toggle(self , enabled : bool | None = None):
         if enabled == None: enabled = self.hotkey != None
         blocking = self.block()
-        if blocking: print(self.id , blocking)
         if not blocking: enabled = True
         
         hotkey = (("" if blocking else "~") + "$*" + self.id) if enabled else None
