@@ -16,7 +16,7 @@ class InputBind:
     def __call__(self , id : InputId) -> bool:
         if not self.enabled or (self.thread != None and self.thread.is_alive()): return False
         for i in self.input:
-            if i != id and not get(i): return False
+            if not get(i): return False
 
         self.thread = threading.Thread(target = lambda: self.call(id))
         self.thread.start()
@@ -94,7 +94,7 @@ class InputConnection(Set[InputBind]):
         if not self.active: return
 
         id = self.id
-        up.guard(id)
+        #up.guard(id)
         sendEvent(id + " Up")
         
         self.active = False
