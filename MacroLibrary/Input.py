@@ -134,7 +134,7 @@ up = Event(_upCall)
 class Bind:
     # cls property
     set : Set[Bind] = set()
-    
+
     # data property
     input : Final[Tuple[InputId , ...]]
     call : Final[Callable[[InputId]]]
@@ -258,4 +258,4 @@ for id in INPUT_IDS: InputConnection.get(id)
 
 
 Connection = InputConnection
-__all__ = ["down" , "up" , "get" , "wait" , "Bind" , "Connection"]
+__all__ = ["systemState" , "down" , "up" , "get" , "wait" , "Bind" , "Connection" , "rebind"]

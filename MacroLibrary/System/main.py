@@ -1,14 +1,14 @@
 from .common import *
 import pygetwindow
 
-class _Keybinds(Dict[str , Set[KeybindEntry | Set[KeybindEntry]]]):
+class BindData(Dict[str , Set[KeybindEntry | Set[KeybindEntry]]]):
     def update(self , category : str | Literal["default"] , input : InputSig , call : Callable[[InputId]]):
         if not self.get(category) : self[category] = set()
         self[category].add((input , call))
 
 class Sys:
     state = State()
-    keybinds = _Keybinds()
+    bindData = BindData()
     callbinds : Set[Input.Bind] = set()
     appId : str | None = None
     loaded : bool = False
@@ -43,7 +43,7 @@ class Sys:
         print("loading binds...")
         binds["default"] = True
         for cid , category in binds.items():
-            f = cls.keybinds.get(cid)
+            f = cls.bindData.get(cid)
 
             if f == None: continue
             if category == False or category == None: continue
@@ -94,6 +94,18 @@ class Sys:
         exitEvent.set()
         cls.loaded = False
         return True
+
+    @classmethod
+    def rebind(cls , input : InputSig , outputid : InputId):
+        def call(id):
+            print("rebind called")
+            Input.send(outputid + " down")
+            Input.wait(id)
+            Input.send(outputid + " up")
+        bind = Input.Bind(input , call)
+        bind.toggle(cls.state())
+        cls.callbinds.add(bind)
+        return bind
 
 # sys binds
 Sys.sysbinds.add(Input.Bind("F12" , lambda id : Sys.exit()))
