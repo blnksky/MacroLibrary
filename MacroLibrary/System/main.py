@@ -98,7 +98,6 @@ class Sys:
     @classmethod
     def rebind(cls , input : InputSig , outputid : InputId):
         def call(id):
-            print("rebind called")
             Input.send(outputid + " down")
             Input.wait(id)
             Input.send(outputid + " up")
