@@ -99,7 +99,7 @@ class Sys:
     def rebind(cls , input : InputSig , outputid : InputId):
         def call(id):
             Input.send(outputid + " down")
-            Input.wait(id)
+            Input.wait(id , None , False)
             Input.send(outputid + " up")
         bind = Input.Bind(input , call)
         bind.toggle(cls.state())
