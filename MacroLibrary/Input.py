@@ -59,6 +59,19 @@ INPUT_IDS = {
 }
 inputStates : Dict[InputId , int] = {}
 
+T = TypeVar("T" , bound = InputSig)
+def normalize(i : T) -> T:
+    if isinstance(i , tuple):
+        l = list(i)
+        for n in range(len(l)) : l[n] = normalize(l[n])
+        i = tuple(l)
+        return i
+    
+    i = i.lower()
+    i = re.sub(r" down| up|{|}|~|!|$|^" , "" , str(i)) # _l|_r
+    
+    return i
+
 def get(id : InputId):
     """
     Returns the physical input state of the input 'id'
@@ -83,17 +96,18 @@ def _upCall(id : InputId):
     update(id , -1)
     return True
 
-def wait(id : InputId , timeout : int | None = None , pressed : bool = False):
+def wait(id : InputId , timeout : int | None = None , pressed : bool | None = None):
     """
     Yields the current thread until input 'id' changes to the logical state, by default up
     """
 
-    if pressed == None and re.findall(r"down|up" , id.lower()) != None:
-        pressed = re.findall(r"down|up" , id.lower())[0] == "down"
+    idstate = re.search(r"down|up" , id.lower())
+    if pressed == None and idstate != None:
+        pressed = idstate[0] == "down"
 
     id = normalize(id)
     if pressed == get(id): return True
-    elif pressed == None: pressed = not get(id)
+    elif pressed == None: pressed = False #not get(id)
     event = down if pressed else up
 
     ts = None
@@ -104,19 +118,6 @@ def wait(id : InputId , timeout : int | None = None , pressed : bool = False):
         while event.wait() != id: pass
     
     return get(id) == pressed
-
-T = TypeVar("T" , bound = InputSig)
-def normalize(i : T) -> T:
-    if isinstance(i , tuple):
-        l = list(i)
-        for n in range(len(l)) : l[n] = normalize(l[n])
-        i = tuple(l)
-        return i
-    
-    i = i.lower()
-    i = re.sub(r" down| up|{|}|~|!|$|^" , "" , str(i)) # _l|_r
-    
-    return i
 
 def send(sig : InputSig):
     """

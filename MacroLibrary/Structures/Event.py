@@ -64,7 +64,7 @@ class Event(Generic[P]):
         thread = threading.current_thread()
         self._waiting[thread] = False
         self._tEvent.wait((timeout / 1000) if timeout != None else None)
-
+        
         args = self._waiting.pop(thread)
         return args if not isinstance(args , tuple) or len(args) > 1 else args[0] if len(args) > 0 else None
 
