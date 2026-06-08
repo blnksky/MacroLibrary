@@ -83,10 +83,13 @@ def _upCall(id : InputId):
     update(id , -1)
     return True
 
-def wait(id : InputId , timeout : int | None = None , pressed : bool | None = None):
+def wait(id : InputId , timeout : int | None = None , pressed : bool = False):
     """
     Yields the current thread until input 'id' changes to the logical state, by default up
     """
+
+    if pressed == None and re.findall(r"down|up" , id.lower()) != None:
+        pressed = re.findall(r"down|up" , id.lower())[0] == "down"
 
     id = normalize(id)
     if pressed == get(id): return True
@@ -258,4 +261,4 @@ for id in INPUT_IDS: InputConnection.get(id)
 
 
 Connection = InputConnection
-__all__ = ["systemState" , "down" , "up" , "get" , "wait" , "Bind" , "Connection" , "rebind"]
+__all__ = ["down" , "up" , "get" , "wait" , "Bind" , "Connection"]
