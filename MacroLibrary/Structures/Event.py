@@ -32,7 +32,7 @@ class Event(Generic[P]):
         call : Callable[G]
         event : Event[G]
         def __init__(self , event : Event[G] , call : Callable[G]) -> None:
-            self.guard = call
+            self.call = call
             self.event = event
             event._connections.add(self)
 

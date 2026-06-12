@@ -7,7 +7,7 @@ class BindData(Dict[str , Set[KeybindEntry | Set[KeybindEntry]]]):
         self[category].add((input , call))
 
 class Sys:
-    state = State()
+    state = State(value = False)
     bindData = BindData()
     callbinds : Set[Input.Bind] = set()
     appId : str | None = None
