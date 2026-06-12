@@ -29,7 +29,7 @@ class Event(Generic[P]):
         return True
 
     class Connection(Generic[G]):
-        guard : Callable[G]
+        call : Callable[G]
         event : Event[G]
         def __init__(self , event : Event[G] , call : Callable[G]) -> None:
             self.guard = call
@@ -37,23 +37,23 @@ class Event(Generic[P]):
             event._connections.add(self)
 
         def __call__(self , *args : G.args , **kwargs : G.kwargs) -> Any:
-            return self.guard(*args , **kwargs)
+            return self.call(*args , **kwargs)
         
         def disconnect(self) -> Callable[G]:
             self.event._connections.remove(self)
-            return self.guard
+            return self.call
         
     def connect(self , call : Callable[P]) -> Connection[P]:
         return self.Connection(self , call)
     
     def once(self , call : Callable[P]) -> Connection[P]:
         con = self.Connection(self , call)
-        call = con.guard
+        call = con.call
 
         def f(*args , **kwargs):
             con.disconnect()
             return call(*args , **kwargs)
-        con.guard = f
+        con.call = f
         
         return con
     

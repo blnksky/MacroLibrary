@@ -6,8 +6,8 @@ class State(Event):
     update : Event[int]
     buffer : int | None
 
-    def __init__(self, call: Callable[..., bool] = lambda *args: True , buffer : int | None = None) -> None:
-        super().__init__(call)
+    def __init__(self, guard: Callable[..., bool] = lambda *args: True , buffer : int | None = None) -> None:
+        super().__init__(guard)
         self.value = 0
         self.update = Event(lambda i: self._update(i))
         self.buffer = buffer
