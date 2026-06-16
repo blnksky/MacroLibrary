@@ -40,7 +40,10 @@ class Config(Dict):
             return f
         iter1(data["rebinds"])
 
-        updateDict(self , data)
+        self.update(data)
+
+    def update(self , upd):
+        updateDict(self , upd)
     
     def __init__(self: dict[bytes, bytes], data : dict) -> None:
         super().__init__()
