@@ -102,14 +102,14 @@ def wait(id : InputId , timeout : int | None = None , pressed : bool | None = No
     """
 
     idstate = re.search(r"down|up" , id.lower())
-    if pressed == None and idstate != None:
-        pressed = idstate[0] == "down"
+    if pressed == None:
+        if idstate != None: pressed = idstate[0] == "down"
+        else: pressed = False
 
     id = normalize(id)
     if pressed == get(id): return True
-    elif pressed == None: pressed = False #not get(id)
+    
     event = down if pressed else up
-
     ts = None
     if timeout != None:
         ts = now() + timeout
