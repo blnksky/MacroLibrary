@@ -1,29 +1,16 @@
 from .common import *
 import json , pygetwindow
 
-def getConfig(file : str | None = None) -> dict:
-    data = {
-        "build":    "",
-        "appId":    "",
+config = {
+    "build":    "",
+    "appId":    "",
 
-        "binds":    {
-            "default":  True
-        },
-        "inputs":   {},
-        "rebinds":  {}
-    }
-
-    if file == None: return data
-
-    with open(file) as f: data |= json.load(f)
-    if not isinstance(data , dict): data = {}
-
-    # import build
-    buildId = data["build"]
-    if buildId != "":
-        with open(os.path.join(os.path.dirname(file) , buildId)) as f: data |= json.load(f)
-
-    return data
+    "binds":    {
+        "default":  True
+    },
+    "inputs":   {},
+    "rebinds":  {}
+}
 
 class BindData(Dict[str , Set[KeybindEntry | Set[KeybindEntry]]]):
     def update(self , category : str | Literal["default"] , input : InputSig , call : Callable[[InputId]]):
@@ -32,10 +19,11 @@ class BindData(Dict[str , Set[KeybindEntry | Set[KeybindEntry]]]):
 
 class Sys:
     state = State(value = False)
+    loaded : bool = False
+    appId : str | None = None
+    
     bindData = BindData()
     callbinds : Set[Input.Bind] = set()
-    appId : str | None = None
-    loaded : bool = False
     sysbinds : Set[Input.Bind] = set()
 
     @classmethod
@@ -63,18 +51,29 @@ class Sys:
         print("-- system " + ("enabled" if cls.state() else "disabled") + " --")
 
     @classmethod
-    def load(cls , file : str) -> Dict:
+    def loadConfig(cls , file : str):
+        global config
+        print("loading config data " + file + (" , build: " + config["build"]) if config["build"] != None else "")
+
+        with open(file) as f: config |= json.load(f)
+
+        # import build
+        buildId = config["build"]
+        if buildId != "":
+            with open(os.path.join(os.path.dirname(file) , buildId)) as f: config |= json.load(f)
+
+    @classmethod
+    def load(cls):
         def lifeline():
             exitEvent.wait()
         threading.Thread(target = lifeline).start()
 
-        data = getConfig(file)
-        inputs = data["inputs"]
-        binds = data["binds"]
-        rebinds = data["rebinds"]
+        inputs = config["inputs"]
+        binds = config["binds"]
+        rebinds = config["rebinds"]
         
-        print("loading config " + file + (" , build: " + data["build"]) if data["build"] != None else "")
-        if data["appId"] != "": cls.appId = data["appId"]
+        print("loading config")
+        if config["appId"] != "": cls.appId = config["appId"]
 
         # setup binds
         def iter(f : Dict | List | Any):
@@ -137,8 +136,6 @@ class Sys:
         cls.toggle(False)
         print("loading finished")
 
-        return data
-
     @classmethod
     def exit(cls) -> bool:
         if not cls.loaded: return False
@@ -164,4 +161,4 @@ Sys.sysbinds.add(Input.Bind("F12" , lambda id : Sys.exit()))
 Sys.sysbinds.add(Input.Bind("F1" , lambda id : Sys.toggle()))
 
 
-__all__ = ["Sys"]
+__all__ = ["Sys" , "config"]
