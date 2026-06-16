@@ -1,5 +1,29 @@
 from .common import *
-import pygetwindow
+import json , pygetwindow
+
+def getConfig(file : str | None = None) -> dict:
+    data = {
+        "build":    "",
+        "appId":    "",
+
+        "binds":    {
+            "default":  True
+        },
+        "inputs":   {},
+        "rebinds":  {}
+    }
+
+    if file == None: return data
+
+    with open(file) as f: data |= json.load(f)
+    if not isinstance(data , dict): data = {}
+
+    # import build
+    buildId = data["build"]
+    if buildId != "":
+        with open(os.path.join(os.path.dirname(file) , buildId)) as f: data |= json.load(f)
+
+    return data
 
 class BindData(Dict[str , Set[KeybindEntry | Set[KeybindEntry]]]):
     def update(self , category : str | Literal["default"] , input : InputSig , call : Callable[[InputId]]):
@@ -39,9 +63,41 @@ class Sys:
         print("-- system " + ("enabled" if cls.state() else "disabled") + " --")
 
     @classmethod
-    def load(cls , binds : Dict = {}):
-        print("loading binds...")
-        binds["default"] = True
+    def load(cls , file : str) -> Dict:
+        def lifeline():
+            exitEvent.wait()
+        threading.Thread(target = lifeline).start()
+
+        data = getConfig(file)
+        inputs = data["inputs"]
+        binds = data["binds"]
+        rebinds = data["rebinds"]
+        
+        print("loading config " + file + (" , build: " + data["build"]) if data["build"] != None else "")
+        if data["appId"] != "": cls.appId = data["appId"]
+
+        # setup binds
+        def iter(f : Dict | List | Any):
+            if isinstance(f , Dict):
+                for i , r in f.items(): f[i] = iter(r)
+            elif isinstance(f , list): f = tuple(f)
+            return f
+        iter(inputs)
+        iter(binds)
+
+        def iter1(f : Dict | List | Any):
+            if isinstance(f , Dict):
+                new = {}
+                for i , r in f.items():
+                    if isinstance(i , List): new[tuple(i)] = iter(r)
+                    else: new[i] = iter(r)
+                f.clear()
+                f |= new
+            elif isinstance(f , list): f = tuple(f)
+            return f
+        iter1(rebinds)
+        for input , output in rebinds.items(): Sys.rebind(input , output)
+
         for cid , category in binds.items():
             f = cls.bindData.get(cid)
 
@@ -57,7 +113,7 @@ class Sys:
 
                 if not isinstance(f , set): return
                 for (input , call) in f:
-                    if not isinstance(call , Callable): continue
+                    if not isinstance(call , Callable) or not isinstance(input , str): continue
                     print("      " + call.__name__ + ":" , input)
                     cls.callbinds.add(Input.Bind(input , call))
                 
@@ -77,13 +133,11 @@ class Sys:
         AHK.start_hotkeys()
         for e in cls.sysbinds: e.toggle(True)
 
-        def lifeline():
-            exitEvent.wait()
-        threading.Thread(target = lifeline).start()
-
         cls.loaded = True
         cls.toggle(False)
         print("loading finished")
+
+        return data
 
     @classmethod
     def exit(cls) -> bool:
@@ -105,7 +159,6 @@ class Sys:
         bind.toggle(cls.state())
         cls.callbinds.add(bind)
         return bind
-
 # sys binds
 Sys.sysbinds.add(Input.Bind("F12" , lambda id : Sys.exit()))
 Sys.sysbinds.add(Input.Bind("F1" , lambda id : Sys.toggle()))
