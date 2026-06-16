@@ -5,14 +5,19 @@ import json , pygetwindow
 
 class Config(Dict):
     def load(self , file : str):
+        data = {
+            "binds":    {},
+            "inputs":   {},
+            "rebinds":  {}
+        }
         print("loading config data " + file + (" , build: " + self["build"]) if self["build"] != None else "")
 
-        with open(file) as f: updateDict(self , json.load(f))
+        with open(file) as f: updateDict(data , json.load(f))
 
         # import build
         buildId = self["build"]
         if buildId != "":
-            with open(os.path.join(os.path.dirname(file) , buildId)) as f: updateDict(self , json.load(f))
+            with open(os.path.join(os.path.dirname(file) , buildId)) as f: updateDict(data , json.load(f))
 
         # refactor binds
         def iter(f : Dict | List | Any):
@@ -20,8 +25,8 @@ class Config(Dict):
                 for i , r in f.items(): f[i] = iter(r)
             elif isinstance(f , list): f = tuple(f)
             return f
-        iter(config["inputs"])
-        iter(config["binds"])
+        iter(data["inputs"])
+        iter(data["binds"])
 
         def iter1(f : Dict | List | Any):
             if isinstance(f , Dict):
@@ -33,7 +38,9 @@ class Config(Dict):
                 updateDict(f , new)
             elif isinstance(f , list): f = tuple(f)
             return f
-        iter1(config["rebinds"])
+        iter1(data["rebinds"])
+
+        updateDict(self , data)
     
     def __init__(self: dict[bytes, bytes], data : dict) -> None:
         super().__init__()
