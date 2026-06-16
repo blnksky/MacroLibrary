@@ -101,7 +101,7 @@ class Sys:
             return f
         iter1(rebinds)
         for input , output in rebinds.items(): Sys.rebind(input , output)
-
+        
         for cid , category in binds.items():
             f = cls.bindData.get(cid)
 
@@ -117,7 +117,7 @@ class Sys:
 
                 if not isinstance(f , set): return
                 for (input , call) in f:
-                    if not isinstance(call , Callable) or not isinstance(input , str): continue
+                    if not isinstance(call , Callable): continue
                     print("      " + call.__name__ + ":" , input)
                     cls.callbinds.add(Input.Bind(input , call))
                 
