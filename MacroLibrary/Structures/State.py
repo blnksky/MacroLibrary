@@ -21,26 +21,16 @@ class State(Event , Generic[T]):
         return res
     
     def _update(self , increment : T | None = None):
+        prev = self()
+
         if not isinstance(increment , type(self.value)):
             raise TypeError(f"arg must be {type(self.value).__name__}, got {type(increment).__name__}")
         if isinstance(increment , bool):
             self.value = increment
         elif isinstance(increment , int):
             self.value += increment
-        super().__call__(self())
+        
+        if self() != prev: super().__call__(self())
         return True
-
-    def wait(self , timeout : int | None = None):
-        waiting = True
-        if timeout == None: timeout = self.buffer
-
-        def f(): waiting = False
-        if timeout != None: delay(f , timeout)
-
-        r = False
-        while waiting :
-            r = super().wait()
-            if r: break
-        return r
 
 __all__ = ["State"]
