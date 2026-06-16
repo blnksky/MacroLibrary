@@ -1,7 +1,24 @@
+from typing import Iterable
+
 from .common import *
 import json , pygetwindow
 
-config = {
+class Config(Dict):
+    def load(self , file : str):
+        print("loading config data " + file + (" , build: " + self["build"]) if self["build"] != None else "")
+
+        with open(file) as f: self |= json.load(f)
+
+        # import build
+        buildId = self["build"]
+        if buildId != "":
+            with open(os.path.join(os.path.dirname(file) , buildId)) as f: self |= json.load(f)
+    
+    def __init__(self: dict[bytes, bytes], data : dict) -> None:
+        super().__init__()
+        self |= data
+
+config = Config({
     "build":    "",
     "appId":    "",
 
@@ -10,7 +27,7 @@ config = {
     },
     "inputs":   {},
     "rebinds":  {}
-}
+})
 
 class BindData(Dict[str , Set[KeybindEntry | Set[KeybindEntry]]]):
     def update(self , category : str | Literal["default"] , input : InputSig , call : Callable[[InputId]]):
@@ -49,18 +66,6 @@ class Sys:
             for b in cls.sysbinds: Input.Connection.get(b.input[0]).toggle(True)
 
         print("-- system " + ("enabled" if cls.state() else "disabled") + " --")
-
-    @classmethod
-    def loadConfig(cls , file : str):
-        global config
-        print("loading config data " + file + (" , build: " + config["build"]) if config["build"] != None else "")
-
-        with open(file) as f: config |= json.load(f)
-
-        # import build
-        buildId = config["build"]
-        if buildId != "":
-            with open(os.path.join(os.path.dirname(file) , buildId)) as f: config |= json.load(f)
 
     @classmethod
     def load(cls):
