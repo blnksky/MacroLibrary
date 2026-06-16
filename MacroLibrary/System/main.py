@@ -13,6 +13,27 @@ class Config(Dict):
         buildId = self["build"]
         if buildId != "":
             with open(os.path.join(os.path.dirname(file) , buildId)) as f: updateDict(self , json.load(f))
+
+        # refactor binds
+        def iter(f : Dict | List | Any):
+            if isinstance(f , Dict):
+                for i , r in f.items(): f[i] = iter(r)
+            elif isinstance(f , list): f = tuple(f)
+            return f
+        iter(config["inputs"])
+        iter(config["binds"])
+
+        def iter1(f : Dict | List | Any):
+            if isinstance(f , Dict):
+                new = {}
+                for i , r in f.items():
+                    if isinstance(i , List): new[tuple(i)] = iter(r)
+                    else: new[i] = iter(r)
+                f.clear()
+                updateDict(f , new)
+            elif isinstance(f , list): f = tuple(f)
+            return f
+        iter1(config["rebinds"])
     
     def __init__(self: dict[bytes, bytes], data : dict) -> None:
         super().__init__()
@@ -72,37 +93,13 @@ class Sys:
         def lifeline():
             exitEvent.wait()
         threading.Thread(target = lifeline).start()
-
-        inputs = config["inputs"]
-        binds = config["binds"]
-        rebinds = config["rebinds"]
         
         print("loading config")
         if config["appId"] != "": cls.appId = config["appId"]
 
-        # setup binds
-        def iter(f : Dict | List | Any):
-            if isinstance(f , Dict):
-                for i , r in f.items(): f[i] = iter(r)
-            elif isinstance(f , list): f = tuple(f)
-            return f
-        iter(inputs)
-        iter(binds)
-
-        def iter1(f : Dict | List | Any):
-            if isinstance(f , Dict):
-                new = {}
-                for i , r in f.items():
-                    if isinstance(i , List): new[tuple(i)] = iter(r)
-                    else: new[i] = iter(r)
-                f.clear()
-                updateDict(f , new)
-            elif isinstance(f , list): f = tuple(f)
-            return f
-        iter1(rebinds)
-        for input , output in rebinds.items(): Sys.rebind(input , output)
+        for input , output in config["rebinds"].items(): Sys.rebind(input , output)
         
-        for cid , category in binds.items():
+        for cid , category in config["binds"].items():
             f = cls.bindData.get(cid)
 
             if f == None: continue
