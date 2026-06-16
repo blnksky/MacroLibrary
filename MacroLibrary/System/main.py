@@ -1,22 +1,22 @@
 from typing import Iterable
-
 from .common import *
 import json , pygetwindow
+
 
 class Config(Dict):
     def load(self , file : str):
         print("loading config data " + file + (" , build: " + self["build"]) if self["build"] != None else "")
 
-        with open(file) as f: self |= json.load(f)
+        with open(file) as f: updateDict(self , json.load(f))
 
         # import build
         buildId = self["build"]
         if buildId != "":
-            with open(os.path.join(os.path.dirname(file) , buildId)) as f: self |= json.load(f)
+            with open(os.path.join(os.path.dirname(file) , buildId)) as f: updateDict(self , json.load(f))
     
     def __init__(self: dict[bytes, bytes], data : dict) -> None:
         super().__init__()
-        self |= data
+        updateDict(self , data)
 
 config = Config({
     "build":    "",
@@ -96,7 +96,7 @@ class Sys:
                     if isinstance(i , List): new[tuple(i)] = iter(r)
                     else: new[i] = iter(r)
                 f.clear()
-                f |= new
+                updateDict(f , new)
             elif isinstance(f , list): f = tuple(f)
             return f
         iter1(rebinds)
