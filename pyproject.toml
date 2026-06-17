@@ -7,7 +7,7 @@ name = "MacroLibrary"
 dynamic = ["version"]
 dependencies = [
     "requests>=2.31.0",
-    "autohotkey.py",
+    "ahk",
     "pygetwindow"
 ]
 
