@@ -138,7 +138,7 @@ def send(sig : InputSig):
 def buffer(id : InputId , timeout : int = 0):
     """
     sends the input regardless of its current state, then resolves its state automatically based on its physical state
-    timeout in milliseconds: if specified, it will resolve upon timeout
+    timeout in milliseconds: if specified, it will buffer the resolve until timeout, extending it if state hasn't changed
     """
 
     nid = normalize(id)
