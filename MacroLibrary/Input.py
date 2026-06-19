@@ -128,6 +128,8 @@ def send(sig : InputSig):
     Sends the input as virtual input, either as a singular input char when 'sig' is an InputId, or an input combination represented by the reverse order of the tuple 'sig'
     """
     
+    print(sig)
+
     if not isinstance(sig , str):
         length = len(sig)
         for i in range(length) : send(sig[length - i] + " Down"); sleep()
@@ -145,7 +147,6 @@ def buffer(id : InputId , timeout : int = 0):
     if not get(nid) and timeout <= 0: send(id); return
     
     if re.search(id.lower() , " up") == None: send(nid + " down")
-
     def th():
         t = now() + timeout
         if timeout > 0 and wait(id , timeout): sleep(t - now())
