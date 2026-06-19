@@ -127,13 +127,30 @@ def send(sig : InputSig):
     """
     Sends the input as virtual input, either as a singular input char when 'sig' is an InputId, or an input combination represented by the reverse order of the tuple 'sig'
     """
-
+    
     if not isinstance(sig , str):
         length = len(sig)
         for i in range(length) : send(sig[length - i] + " Down"); sleep()
         for i in range(length) : send(sig[i] + " Up"); sleep()
         return
     AHK.send_input("{" + sig + "}")
+
+def buffer(id : InputId , timeout : int = 0):
+    """
+    sends the input regardless of its current state, then resolves its state automatically based on its physical state
+    timeout in milliseconds: if specified, it will resolve upon timeout
+    """
+
+    nid = normalize(id)
+    if not get(nid) and timeout <= 0: send(id); return
+    
+    if re.search(id.lower() , " up") == None: send(nid + " down")
+    if timeout > 0:
+        def th():
+            wait(nid , timeout)
+            send(nid + " up")
+        delay(th)
+    else: pass
 
 down = Event(_downCall)
 up = Event(_upCall)
