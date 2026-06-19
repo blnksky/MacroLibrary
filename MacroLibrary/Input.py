@@ -1,6 +1,6 @@
 from .common import *
 from .Structures import *
-
+import queue
 
 # input state handling
 INPUT_IDS = {
@@ -58,6 +58,7 @@ INPUT_IDS = {
     *[str(i) for i in range(10)]
 }
 inputStates : Dict[InputId , int] = {}
+inputQueue : List = []
 
 T = TypeVar("T" , bound = InputSig)
 def normalize(i : T) -> T:
@@ -87,6 +88,9 @@ def update(id : InputId , incr : int):
     #safety limiters
     if inputStates[id] < 0: inputStates[id] = 0
     if inputStates[id] > 1: inputStates[id] = 1
+    #queue
+    if id in inputQueue: inputQueue.remove(id)
+    if incr > 0: inputQueue.insert(0 , id)
 
 def _downCall(id : InputId):
     update(id , 1)
@@ -183,6 +187,7 @@ class InputConnection(Set[Bind]):
     block : State
     hotkey: None | InputId
     active : bool
+    sorted : Dict[int , List[Bind]]
 
     @classmethod
     def get(cls , id : InputId) -> InputConnection:
@@ -194,11 +199,21 @@ class InputConnection(Set[Bind]):
     def add(self, element: Bind) -> None:
         res = super().add(element)
         if element.block: self.block.update(1)
+
+        l = len(element.input)
+        if not self.sorted.get(l): self.sorted[l] = []
+        self.sorted[l].append(element)
+
         return res
 
     def remove(self, element: Bind) -> None:
         res = super().remove(element)
         if element.block: self.block.update(-1)
+
+        l = len(element.input)
+        self.sorted[l].remove(element)
+        if len(self.sorted[l]) <= 0: self.sorted.pop(l)
+
         return res
 
     def __init__(self, id : InputId):
@@ -209,6 +224,7 @@ class InputConnection(Set[Bind]):
         self.hotkey = None
         self.active = False
         self.dict[id] = self
+        self.sorted = {}
 
     def toggle(self , enabled : bool | None = None):
         if enabled == None: enabled = self.hotkey != None
@@ -241,12 +257,29 @@ class InputConnection(Set[Bind]):
         down(id)
         
         block = False
-        for b in sorted(self , key = lambda b: len(b.input) , reverse = True):
-            if not b(id): continue
-            block = b.block
-            break
+        if len(self.sorted) > 0:
+            success = False
+            def sort(b : Bind):
+                priority = 0
+                for i in b.input:
+                    if not i in inputQueue: continue
+                    priority += inputQueue.index(i)
+                return priority
+            for _ , l in sorted(self.sorted.items() , key = lambda p:p[0] , reverse = True):
+                for b in sorted(l , key = sort):
+                    if not b(id): continue
+                    block = b.block
+                    success = True
+                    break
+                if success: break
+        
+        #for b in sorted(self , key = lambda b: len(b.input) , reverse = True):
+        #    if not b(id): continue
+        #    block = b.block
+        #    break
+        
         if block or not self.block(): return
-
+        
         send(id + " Down")
 
     def up(self):
