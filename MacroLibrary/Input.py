@@ -145,12 +145,10 @@ def buffer(id : InputId , timeout : int = 0):
     if not get(nid) and timeout <= 0: send(id); return
     
     if re.search(id.lower() , " up") == None: send(nid + " down")
-    if timeout > 0:
-        def th():
-            wait(nid , timeout)
-            send(nid + " up")
-        delay(th)
-    else: pass
+    def th():
+        wait(nid , timeout if timeout > 0 else None)
+        send(nid + " up")
+    delay(th)
 
 down = Event(_downCall)
 up = Event(_upCall)
