@@ -12,6 +12,7 @@ def sleep(dt : float = 0) -> None:
     """
     Yields code execution of current thread for dt milliseconds
     """
+    if dt <= 0: return
     time.sleep(dt / 1000)
 
 def delay(callback = lambda : None , delay : float = 0):
