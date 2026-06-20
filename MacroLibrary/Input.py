@@ -128,8 +128,6 @@ def send(sig : InputSig):
     Sends the input as virtual input, either as a singular input char when 'sig' is an InputId, or an input combination represented by the reverse order of the tuple 'sig'
     """
     
-    print(sig)
-
     if not isinstance(sig , str):
         length = len(sig)
         for i in range(length) : send(sig[length - i] + " Down"); sleep()
