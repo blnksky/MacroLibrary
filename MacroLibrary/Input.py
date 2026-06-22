@@ -158,6 +158,7 @@ def buffer(id : InputId , timeout : int = 0):
 
     send(id)
     if timeout <= 0 and s != get(nid):
+        print("resolve")
         resolve(nid)
 
     def th():
