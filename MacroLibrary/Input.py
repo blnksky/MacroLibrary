@@ -153,9 +153,8 @@ def buffer(id : InputId , timeout : int = 0):
     """
 
     nid = normalize(id)
-    s = (re.search(id.lower() , " up") == None)
-    print("buffer state " + ("true" if s else "false"))
-    if s == True and re.search(id.lower() , " down") == None: id += " down"
+    s = (re.search(" up" , id.lower()) == None)
+    if s == True and re.search(" down" , id.lower()) == None: id += " down"
 
     send(id)
     if timeout <= 0 and s != get(nid):
