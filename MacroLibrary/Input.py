@@ -60,7 +60,7 @@ INPUT_IDS = {
 inputStates : Dict[InputId , int] = {}
 inputQueue : List = []
 
-T = TypeVar("T" , bound = InputSig)
+T = TypeVar("T" , InputSig , InputId)
 def normalize(i : T) -> T:
     if isinstance(i , tuple):
         l = list(i)
@@ -152,10 +152,10 @@ def buffer(id : InputId , timeout : int = 0):
     timeout in milliseconds: if specified, it will buffer the resolve until timeout, extending it if state hasn't changed
     """
 
-    s = re.search(id.lower() , " up") == None
-    if s == True: id += " down"
-
     nid = normalize(id)
+    s = re.search(id.lower() , " up") == None
+    if s == True and re.search(id.lower() , " down") == None: id += " down"
+
     send(id)
     if timeout <= 0 and s != get(nid):
         resolve(nid)
