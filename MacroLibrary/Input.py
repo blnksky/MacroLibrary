@@ -168,6 +168,17 @@ def buffer(id : InputId , timeout : int = 0):
         resolve(nid)
     delay(th)
 
+def trigger(id : InputId , delay : int = 0):
+    """
+    sends respective counter state signals before sending the actual signal, delayed by delay
+    """
+
+    s = (re.search(" up" , id.lower()) == None)
+    if s == True and re.search(" down" , id.lower()) == None: id += " down"
+    send(normalize(id) + " " + ("up" if s else "down"))
+    sleep(delay)
+    send(id)
+
 down = Event(_downCall)
 up = Event(_upCall)
 
