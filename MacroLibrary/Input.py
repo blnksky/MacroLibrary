@@ -164,7 +164,7 @@ def buffer(id : InputId , timeout : int = 0):
     def th():
         t = now() + timeout
         if timeout > 0 and wait(nid , timeout , not s): sleep(t - now())
-        else: wait(nid , not s)
+        else: wait(nid , None , not s)
         resolve(nid)
     delay(th)
 
