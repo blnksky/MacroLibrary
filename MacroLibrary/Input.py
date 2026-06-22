@@ -121,7 +121,7 @@ def resolve(id : InputId):
     """
 
     id = normalize(id)
-    print("normalized" , id)
+    print("normalized " + id)
     send(id + " " + ("down" if get(id) else "up"))
 
 def wait(id : InputId , timeout : int | None = None , pressed : bool | None = None):
