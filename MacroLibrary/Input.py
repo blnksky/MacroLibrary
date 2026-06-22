@@ -159,6 +159,7 @@ def buffer(id : InputId , timeout : int = 0):
     send(id)
     if timeout <= 0 and s != get(nid):
         resolve(nid)
+        return
 
     def th():
         t = now() + timeout
