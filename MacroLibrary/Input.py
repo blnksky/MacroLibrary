@@ -100,6 +100,26 @@ def _upCall(id : InputId):
     update(id , -1)
     return True
 
+def send(sig : InputSig):
+    """
+    Sends the input as virtual input, either as a singular input char when 'sig' is an InputId, or an input combination represented by the reverse order of the tuple 'sig'
+    """
+    
+    if not isinstance(sig , str):
+        length = len(sig)
+        for i in range(length) : send(sig[length - i] + " Down"); sleep()
+        for i in range(length) : send(sig[i] + " Up"); sleep()
+        return
+    AHK.send_input("{" + sig + "}")
+
+def resolve(id : InputId):
+    """
+    sends appropriate input signals to synchronize virtual and physical input states of id
+    """
+
+    id = normalize(id)
+    send(id + " " + ("down" if get(id) else "up"))
+
 def wait(id : InputId , timeout : int | None = None , pressed : bool | None = None):
     """
     Yields the current thread until input 'id' changes to the logical state, by default up
@@ -123,33 +143,25 @@ def wait(id : InputId , timeout : int | None = None , pressed : bool | None = No
     
     return get(id) == pressed
 
-def send(sig : InputSig):
-    """
-    Sends the input as virtual input, either as a singular input char when 'sig' is an InputId, or an input combination represented by the reverse order of the tuple 'sig'
-    """
-    
-    if not isinstance(sig , str):
-        length = len(sig)
-        for i in range(length) : send(sig[length - i] + " Down"); sleep()
-        for i in range(length) : send(sig[i] + " Up"); sleep()
-        return
-    AHK.send_input("{" + sig + "}")
-
 def buffer(id : InputId , timeout : int = 0):
     """
-    sends the input regardless of its current state, then resolves its state automatically based on its physical state
+    sends the input in its specified state, regardless of its current state, then resolves its state automatically based on its physical state, while entirely circumventing input blocks;
     timeout in milliseconds: if specified, it will buffer the resolve until timeout, extending it if state hasn't changed
     """
 
+    s = re.search(id.lower() , " up") == None
+    if s == True: id += " down"
+
     nid = normalize(id)
-    if not get(nid) and timeout <= 0: send(id); return
-    
-    if re.search(id.lower() , " up") == None: send(nid + " down")
+    send(id)
+    if timeout <= 0 and s != get(nid):
+        resolve(nid)
+
     def th():
         t = now() + timeout
-        if timeout > 0 and wait(id , timeout): sleep(t - now())
-        else: wait(id)
-        send(nid + " up")
+        if timeout > 0 and wait(nid , timeout , not s): sleep(t - now())
+        else: wait(nid , not s)
+        resolve(nid)
     delay(th)
 
 down = Event(_downCall)
@@ -313,4 +325,4 @@ for id in INPUT_IDS: InputConnection.get(id)
 
 
 Connection = InputConnection
-__all__ = ["down" , "up" , "get" , "wait" , "Bind" , "Connection"]
+__all__ = ["down" , "up" , "get" , "resolve" , "wait" , "buffer" , "Bind" , "Connection"]
