@@ -29,9 +29,9 @@ class Event(Generic[P]):
         return True
 
     class Connection(Generic[G]):
-        call : Callable[G]
+        call : Callable[G , Any]
         event : Event[G]
-        def __init__(self , event : Event[G] , call : Callable[G]) -> None:
+        def __init__(self , event : Event[G] , call : Callable[G , Any]) -> None:
             self.call = call
             self.event = event
             event._connections.add(self)
@@ -43,10 +43,10 @@ class Event(Generic[P]):
             self.event._connections.remove(self)
             return self.call
         
-    def connect(self , call : Callable[P]) -> Connection[P]:
+    def connect(self , call : Callable[P , Any]) -> Connection[P]:
         return self.Connection(self , call)
     
-    def once(self , call : Callable[P]) -> Connection[P]:
+    def once(self , call : Callable[P , Any]) -> Connection[P]:
         con = self.Connection(self , call)
         call = con.call
 
