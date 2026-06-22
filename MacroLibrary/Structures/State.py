@@ -2,13 +2,13 @@ from .common import *
 from .Event import Event
 
 T = TypeVar("T" , int , bool)
-class State(Event , Generic[T]):
+class State(Event[bool] , Generic[T]):
     value : T
     update : Event[int]
     buffer : int | None
     _get : Callable[[bool] , bool] | None = None
 
-    def __init__(self, guard: Callable[[T], bool] = lambda *args: True , get: Callable[[bool] , bool] | None = None , value : T = 0 , buffer : int | None = None) -> None:
+    def __init__(self, guard: Callable[[bool], bool] = lambda *args: True , get: Callable[[bool] , bool] | None = None , value : T = 0 , buffer : int | None = None) -> None:
         super().__init__(guard)
         self._get = get
         self.value = value
