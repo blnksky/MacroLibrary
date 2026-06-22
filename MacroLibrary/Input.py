@@ -100,7 +100,7 @@ def _upCall(id : InputId):
     update(id , -1)
     return True
 
-def send(sig : InputSig):
+def _send(sig : InputSig):
     """
     Sends the input as virtual input, either as a singular input char when 'sig' is an InputId, or an input combination represented by the reverse order of the tuple 'sig'
     """
@@ -111,6 +111,9 @@ def send(sig : InputSig):
         for i in range(length) : send(sig[i] + " Up"); sleep()
         return
     AHK.send_input("{" + sig + "}")
+
+    return True
+send = Event(_send)
 
 def resolve(id : InputId):
     """
@@ -325,4 +328,4 @@ for id in INPUT_IDS: InputConnection.get(id)
 
 
 Connection = InputConnection
-__all__ = ["down" , "up" , "get" , "resolve" , "wait" , "buffer" , "Bind" , "Connection"]
+__all__ = ["down" , "up" , "get" , "send" , "resolve" , "wait" , "buffer" , "Bind" , "Connection"]

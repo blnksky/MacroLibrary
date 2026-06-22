@@ -3,12 +3,12 @@ from .common import *
 P = ParamSpec("P")
 G = ParamSpec("G")
 class Event(Generic[P]):
-    guard : Callable[P , bool]
+    guard : Callable[P , bool | None]
     _connections : Set[Connection[P]]
     _tEvent : threading.Event
     _waiting : Dict[Thread , Tuple[Any , ...] | bool]
 
-    def __init__(self , guard : Callable[P , bool] = lambda *args : True) -> None:
+    def __init__(self , guard : Callable[P , bool | None] = lambda *args : True) -> None:
         self.guard = guard
         self._connections = set()
         self._tEvent = threading.Event()
