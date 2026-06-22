@@ -121,9 +121,7 @@ def resolve(id : InputId):
     """
 
     id = normalize(id)
-    id += " " + ("down" if get(id) else "up")
-    print("resolved " + id)
-    send(id)
+    send(id + " " + ("down" if get(id) else "up"))
 
 def wait(id : InputId , timeout : int | None = None , pressed : bool | None = None):
     """
@@ -155,7 +153,8 @@ def buffer(id : InputId , timeout : int = 0):
     """
 
     nid = normalize(id)
-    s = re.search(id.lower() , " up") == None
+    s = (re.search(id.lower() , " up") == None)
+    print("buffer state " + ("true" if s else "false"))
     if s == True and re.search(id.lower() , " down") == None: id += " down"
 
     send(id)
