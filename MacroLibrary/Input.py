@@ -340,4 +340,4 @@ for id in INPUT_IDS: InputConnection.get(id)
 
 
 Connection = InputConnection
-__all__ = ["down" , "up" , "get" , "send" , "resolve" , "wait" , "buffer" , "Bind" , "Connection"]
+__all__ = ["down" , "up" , "get" , "send" , "resolve" , "wait" , "buffer"  , "trigger" , "Bind" , "Connection"]
