@@ -57,13 +57,18 @@ INPUT_IDS = {
     # Digits
     *[str(i) for i in range(10)]
 }
-NORM_INPUT_IDS = set()
-for i in INPUT_IDS: NORM_INPUT_IDS.add(i.lower())
+s = set()
+for i in INPUT_IDS: s.add(i.lower())
+INPUT_IDS |= s
 PASSTHROUGH_INPUTS = {
     # Mouse
     "LButton", "RButton", "MButton", "XButton1", "XButton2",
     "WheelDown", "WheelUp", "WheelLeft", "WheelRight"
 }
+s = set()
+for i in PASSTHROUGH_INPUTS: s.add(i.lower())
+PASSTHROUGH_INPUTS |= s
+
 
 inputStates : Dict[InputId , int] = {}
 inputQueue : List = []
@@ -81,7 +86,7 @@ def normalize(i : T) -> T:
     
     return i
 
-def isInput(i : InputId): return normalize(i) in NORM_INPUT_IDS
+def isInput(i : InputId): return normalize(i) in INPUT_IDS
 
 def get(id : InputId):
     """
@@ -127,7 +132,7 @@ def _send(sig : InputSig):
     elif isinstance(sig , tuple) and len(sig) > 0: sig = sig[0]
     if not isinstance(sig , str): return False
 
-    if normalize(sig) in NORM_INPUT_IDS: sig = "{" + sig + "}"
+    if normalize(sig) in INPUT_IDS: sig = "{" + sig + "}"
     AHK.send_input(sig)
 
     return True
@@ -281,7 +286,7 @@ class InputConnection(Set[Bind]):
     def __init__(self, id : InputId):
         super().__init__()
         self.id = normalize(id)
-        self.block = State(get = lambda s: s and not id in PASSTHROUGH_INPUTS)
+        self.block = State(get = lambda s: s and (not id in PASSTHROUGH_INPUTS))
         self.block.connect(lambda b: self.toggle())
         self.hotkey = None
         self.active = False

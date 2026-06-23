@@ -25,7 +25,6 @@ class Config(Dict):
                 n = {}
                 for i , r in f.items(): n[iter(i)] = iter(r)
                 f.clear()
-                print(f)
                 f |= n
             elif isinstance(f , list): f = tuple(f)
             elif isinstance(f , str):
