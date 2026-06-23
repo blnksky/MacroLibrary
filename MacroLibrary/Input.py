@@ -59,6 +59,11 @@ INPUT_IDS = {
 }
 NORM_INPUT_IDS = set()
 for i in INPUT_IDS: NORM_INPUT_IDS.add(i.lower())
+PASSTHROUGH_INPUTS = {
+    # Mouse
+    "LButton", "RButton", "MButton", "XButton1", "XButton2",
+    "WheelDown", "WheelUp", "WheelLeft", "WheelRight"
+}
 
 inputStates : Dict[InputId , int] = {}
 inputQueue : List = []
@@ -276,7 +281,7 @@ class InputConnection(Set[Bind]):
     def __init__(self, id : InputId):
         super().__init__()
         self.id = normalize(id)
-        self.block = State()
+        self.block = State(get = lambda s: s and not id in PASSTHROUGH_INPUTS)
         self.block.connect(lambda b: self.toggle())
         self.hotkey = None
         self.active = False
