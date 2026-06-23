@@ -6,23 +6,22 @@ class State(Event[bool] , Generic[T]):
     value : T
     update : Event[int]
     buffer : int | None
-    _get : Callable[[bool] , bool] | None = None
+    _prevState_ : bool
+    _get_ : Callable[[bool] , bool] | None = None
 
     def __init__(self, guard: Callable[[bool], bool] = lambda *args: True , get: Callable[[bool] , bool] | None = None , value : T = 0 , buffer : int | None = None) -> None:
         super().__init__(guard)
-        self._get = get
+        self._get_ = get
         self.value = value
         self.update = Event(lambda i: self._update(i))
         self.buffer = buffer
 
     def __call__(self) -> bool:
         res = self.value > 0 if isinstance(self.value , int) else self.value
-        if self._get != None: res = self._get(res)
+        if self._get_ != None: res = self._get_(res)
         return res
     
     def _update(self , increment : T | None = None):
-        prev = self()
-
         if not isinstance(increment , type(self.value)):
             raise TypeError(f"arg must be {type(self.value).__name__}, got {type(increment).__name__}")
         if isinstance(increment , bool):
@@ -30,7 +29,8 @@ class State(Event[bool] , Generic[T]):
         elif isinstance(increment , int):
             self.value += increment
         
-        if self() != prev: super().__call__(self())
-        return True
+        if self() == self._prevState_: return True
+        self._prevState_ = self()
+        return super().__call__(self())
 
 __all__ = ["State"]
