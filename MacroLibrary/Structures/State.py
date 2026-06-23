@@ -6,13 +6,14 @@ class State(Event[bool] , Generic[T]):
     value : T
     update : Event[int]
     buffer : int | None
-    _prevState_ : bool
+    _prevState_ : bool | None
     _get_ : Callable[[bool] , bool] | None = None
 
     def __init__(self, guard: Callable[[bool], bool] = lambda *args: True , get: Callable[[bool] , bool] | None = None , value : T = 0 , buffer : int | None = None) -> None:
         super().__init__(guard)
         self._get_ = get
         self.value = value
+        self._prevState_ = None
         self.update = Event(lambda i: self._update(i))
         self.buffer = buffer
 
