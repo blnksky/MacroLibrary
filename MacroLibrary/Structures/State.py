@@ -30,8 +30,10 @@ class State(Event[bool] , Generic[T]):
         elif isinstance(increment , int):
             self.value += increment
         
-        if self() == self._prevState_: return True
-        self._prevState_ = self()
-        return super().__call__(self())
+        if self() != self._prevState_:
+            self._prevState_ = self()
+            super().__call__(self())
+            
+        return True
 
 __all__ = ["State"]
