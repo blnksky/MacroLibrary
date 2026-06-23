@@ -22,23 +22,19 @@ class Config(Dict):
         # refactor binds
         def iter(f : Dict | List | Any):
             if isinstance(f , Dict):
-                for i , r in f.items(): f[i] = iter(r)
+                n = {}
+                for i , r in f.items(): n[iter(i)] = iter(r)
+                f.clear()
+                print(f)
+                f |= n
             elif isinstance(f , list): f = tuple(f)
+            elif isinstance(f , str):
+                f = tuple(re.split(r" , " , f))
+                if len(f) <= 1: f = f[0]
             return f
         iter(data["inputs"])
         iter(data["binds"])
-
-        def iter1(f : Dict | List | Any):
-            if isinstance(f , Dict):
-                new = {}
-                for i , r in f.items():
-                    if isinstance(i , List): new[tuple(i)] = iter(r)
-                    else: new[i] = iter(r)
-                f.clear()
-                updateDict(f , new)
-            elif isinstance(f , list): f = tuple(f)
-            return f
-        iter1(data["rebinds"])
+        iter(data["rebinds"])
 
         self.update(data)
 
@@ -160,18 +156,18 @@ class Sys:
 
     @classmethod
     def rebind(cls , input : InputSig , output : InputSig):
-        outid = ""
-        if isinstance(output , tuple):
-            outid = output[0]
+        if not isinstance(output , tuple): output = (output,)
+        outid = None
+        outid = output[0]
+        if not Input.isInput(outid): outid = None
+        else:
             l = list(output)
             l[0] = outid + " down"
             output = tuple(l)
-        elif isinstance(output , str):
-            outid = output
-            output += " down"
 
         def call(id):
             Input.send(output)
+            if outid == None: return
             Input.wait(id , None , False)
             Input.send(outid + " up")
         bind = Input.Bind(input , call)

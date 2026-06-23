@@ -57,6 +57,9 @@ INPUT_IDS = {
     # Digits
     *[str(i) for i in range(10)]
 }
+NORM_INPUT_IDS = set()
+for i in INPUT_IDS: NORM_INPUT_IDS.add(i.lower())
+
 inputStates : Dict[InputId , int] = {}
 inputQueue : List = []
 
@@ -72,6 +75,8 @@ def normalize(i : T) -> T:
     i = re.sub(r" down| up|{|}|~|!|$|^" , "" , str(i)) # _l|_r
     
     return i
+
+def isInput(i : InputId): return normalize(i) in NORM_INPUT_IDS
 
 def get(id : InputId):
     """
@@ -105,7 +110,7 @@ def _send(sig : InputSig):
     Sends the input as virtual input, either as a singular input char when 'sig' is an InputId, or an input combination represented by the reverse order of the tuple 'sig'
     """
     
-    if isinstance(sig , tuple):
+    if isinstance(sig , tuple) and len(sig) > 1:
         length = len(sig)
         l = list(sig)
         id = l.pop(0)
@@ -113,8 +118,12 @@ def _send(sig : InputSig):
         for i in r: send(i + " down")
         send(id)
         for i in l: send(i + " up")
-    elif isinstance(sig , str): AHK.send_input("{" + sig + "}")
-    else: return False
+        return True
+    elif isinstance(sig , tuple) and len(sig) > 0: sig = sig[0]
+    if not isinstance(sig , str): return False
+
+    if normalize(sig) in NORM_INPUT_IDS: sig = "{" + sig + "}"
+    AHK.send_input(sig)
 
     return True
 send = Event(_send)
@@ -344,4 +353,4 @@ for id in INPUT_IDS: InputConnection.get(id)
 
 
 Connection = InputConnection
-__all__ = ["down" , "up" , "get" , "send" , "resolve" , "wait" , "buffer"  , "trigger" , "Bind" , "Connection"]
+__all__ = ["normalize" , "isInput" , "down" , "up" , "get" , "send" , "resolve" , "wait" , "buffer"  , "trigger" , "Bind" , "Connection"]
