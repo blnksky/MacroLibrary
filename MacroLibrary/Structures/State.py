@@ -14,8 +14,8 @@ class State(Event[bool] , Generic[T]):
         self.value = value
         self.update = Event(lambda i: self._update(i))
         self.buffer = buffer
-        self._prevState_ = False
         self._get_ = get
+        self._prevState_ = self()
 
     def __call__(self) -> bool:
         res = self.value > 0 if isinstance(self.value , int) else self.value
