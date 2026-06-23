@@ -159,11 +159,21 @@ class Sys:
         return True
 
     @classmethod
-    def rebind(cls , input : InputSig , outputid : InputId):
+    def rebind(cls , input : InputSig , output : InputSig):
+        outid = ""
+        if isinstance(output , tuple):
+            outid = output[0]
+            l = list(output)
+            l[0] = outid + " down"
+            output = tuple(l)
+        elif isinstance(output , str):
+            outid = output
+            output += " down"
+
         def call(id):
-            Input.send(outputid + " down")
+            Input.send(output)
             Input.wait(id , None , False)
-            Input.send(outputid + " up")
+            Input.send(outid + " up")
         bind = Input.Bind(input , call)
         bind.toggle(cls.state())
         cls.callbinds.add(bind)

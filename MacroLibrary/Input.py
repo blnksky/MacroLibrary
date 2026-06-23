@@ -105,12 +105,16 @@ def _send(sig : InputSig):
     Sends the input as virtual input, either as a singular input char when 'sig' is an InputId, or an input combination represented by the reverse order of the tuple 'sig'
     """
     
-    if not isinstance(sig , str):
+    if isinstance(sig , tuple):
         length = len(sig)
-        for i in range(length) : send(sig[length - i] + " Down"); sleep()
-        for i in range(length) : send(sig[i] + " Up"); sleep()
-        return
-    AHK.send_input("{" + sig + "}")
+        l = list(sig)
+        id = l.pop(0)
+        r = l.copy(); r.reverse()
+        for i in r: send(i + " down")
+        send(id)
+        for i in l: send(i + " up")
+    elif isinstance(sig , str): AHK.send_input("{" + sig + "}")
+    else: return False
 
     return True
 send = Event(_send)
