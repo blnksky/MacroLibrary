@@ -5,7 +5,7 @@ import json , pygetwindow
 
 class Config(Dict):
     def load(self , file : str):
-        data = {
+        data : Dict[str , Any] = {
             "binds":    {},
             "inputs":   {},
             "rebinds":  {}
@@ -18,19 +18,15 @@ class Config(Dict):
         buildId = self["build"]
         if buildId != "":
             with open(os.path.join(os.path.dirname(file) , buildId)) as f: updateDict(data , json.load(f))
-
-        # refactor binds
-        def iter(f : Dict | List | Any):
-            if isinstance(f , Dict):
-                n = {}
-                for i , r in f.items(): n[iter(i)] = iter(r)
-                f.clear()
-                f |= n
-            elif isinstance(f , list): f = tuple(f)
-            return f
-        iter(data["inputs"])
-        iter(data["binds"])
-        iter(data["rebinds"])
+        
+        if data.get("rebinds") != None:
+            rebinds = set()
+            f = data.pop("rebinds")
+            if isinstance(f , list):
+                for i in f: rebinds.add(tuple(i))
+                data["rebinds"] = rebinds
+            elif isinstance(f , dict):
+                for i , o in f.items(): rebinds.add((i , o))
 
         self.update(data)
 
@@ -48,8 +44,8 @@ config = Config({
     "binds":    {
         "default":  True
     },
-    "inputs":   {},
-    "rebinds":  {}
+    "inputs":   dict(),
+    "rebinds":  set()
 })
 
 class BindData(Dict[str , Set[KeybindEntry | Set[KeybindEntry]]]):
@@ -99,8 +95,14 @@ class Sys:
         print("loading config")
         if config["appId"] != "": cls.appId = config["appId"]
 
-        for input , output in config["rebinds"].items(): Sys.rebind(input , output)
-        
+        # input rebinds
+        print("input rebinds:")
+        for pair in config["rebinds"]:
+            print("  " + pair[0] + " : " + pair[1])
+            Sys.rebind(pair[0] , pair[1])
+
+        # input binds
+        print("input binds")
         for cid , category in config["binds"].items():
             f = cls.bindData.get(cid)
 
