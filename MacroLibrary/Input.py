@@ -229,7 +229,6 @@ class Bind:
         return True
 
     def __init__(self , input : InputId | InputSig , call : Callable[[InputId]]):
-        print(input)
         if isinstance(input , str):
             input = tuple(re.split(r" , " , input))
         normInput = normalize(input)
