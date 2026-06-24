@@ -24,10 +24,9 @@ class Config(Dict):
             f = data.pop("rebinds")
             if isinstance(f , list):
                 for i in f: rebinds.add(tuple(i))
-                data["rebinds"] = rebinds
             elif isinstance(f , dict):
                 for i , o in f.items(): rebinds.add((i , o))
-
+            data["rebinds"] = rebinds
         self.update(data)
 
     def update(self , upd):
