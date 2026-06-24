@@ -326,7 +326,6 @@ class InputConnection(Set[Bind]):
         
         block = False
         if len(self.sorted) > 0:
-            success = False
             def sort(b : Bind):
                 priority = 0
                 for i in b.input:
@@ -337,17 +336,9 @@ class InputConnection(Set[Bind]):
                 for b in sorted(l , key = sort):
                     if not b(id): continue
                     block = b.block
-                    success = True
                     break
-                if success: break
-        
-        #for b in sorted(self , key = lambda b: len(b.input) , reverse = True):
-        #    if not b(id): continue
-        #    block = b.block
-        #    break
-        
+                if block: break
         if block or not self.block(): return
-        
         send(id + " Down")
 
     def up(self):
