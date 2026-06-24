@@ -27,9 +27,6 @@ class Config(Dict):
                 f.clear()
                 f |= n
             elif isinstance(f , list): f = tuple(f)
-            elif isinstance(f , str):
-                f = tuple(re.split(r" , " , f))
-                if len(f) <= 1: f = f[0]
             return f
         iter(data["inputs"])
         iter(data["binds"])
