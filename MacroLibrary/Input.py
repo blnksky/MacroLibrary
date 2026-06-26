@@ -255,6 +255,7 @@ class InputConnection(Set[Bind]):
     block : State
     hotkey: None | InputId
     active : bool
+    blocked : bool
     sorted : Dict[int , List[Bind]]
 
     @classmethod
@@ -291,6 +292,7 @@ class InputConnection(Set[Bind]):
         self.block.connect(lambda b: self.toggle())
         self.hotkey = None
         self.active = False
+        self.blocked = False
         self.dict[id] = self
         self.sorted = {}
 
@@ -340,7 +342,7 @@ class InputConnection(Set[Bind]):
                     success = True
                     if block: break
                 if success: break
-        if block or not self.block(): return
+        if block or not self.block(): self.blocked = True; return
         send(id + " Down")
 
     def up(self):
@@ -348,8 +350,8 @@ class InputConnection(Set[Bind]):
         id = self.id
         up(id)
         self.active = False
-        if not self.block(): return
-
+        if not self.block() or self.blocked: return
+        self.blocked = False
         send(id + " Up")
 
 # launch setup
