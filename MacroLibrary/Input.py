@@ -342,7 +342,10 @@ class InputConnection(Set[Bind]):
                     success = True
                     if block: break
                 if success: break
-        if block or not self.block(): self.blocked = True; return
+        if block or not self.block():
+            self.blocked = True
+            return
+        
         send(id + " Down")
 
     def up(self):
@@ -350,8 +353,10 @@ class InputConnection(Set[Bind]):
         id = self.id
         up(id)
         self.active = False
-        if not self.block() or self.blocked: return
-        self.blocked = False
+        if self.blocked or not self.block():
+            self.blocked = False
+            return
+        
         send(id + " Up")
 
 # launch setup
