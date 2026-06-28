@@ -174,6 +174,7 @@ class Sys:
 # sys binds
 Sys.sysbinds.add(Input.Bind("F12" , lambda id : Sys.exit()))
 Sys.sysbinds.add(Input.Bind("F1" , lambda id : Sys.toggle()))
+Sys.sysbinds.add(Input.Bind("F1 , LAlt" , lambda id: Sys.toggle(False)))
 
 
 __all__ = ["Sys" , "config"]
