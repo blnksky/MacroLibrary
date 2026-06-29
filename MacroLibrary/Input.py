@@ -68,7 +68,8 @@ PASSTHROUGH_INPUTS = {
 s = set()
 for i in PASSTHROUGH_INPUTS: s.add(i.lower())
 PASSTHROUGH_INPUTS |= s
-
+inputTStamps : Dict[InputId , int] = dict()
+hotkeyBuffer = 200
 
 inputStates : Dict[InputId , int] = {}
 inputQueue : List = []
@@ -104,8 +105,12 @@ def update(id : InputId , incr : int):
     if inputStates[id] < 0: inputStates[id] = 0
     if inputStates[id] > 1: inputStates[id] = 1
     #queue
-    if id in inputQueue: inputQueue.remove(id)
-    if incr > 0: inputQueue.insert(0 , id)
+    if id in inputQueue:
+        inputQueue.remove(id)
+        inputTStamps.pop(id)
+    if incr > 0:
+        inputQueue.insert(0 , id)
+        inputTStamps[id] = now()
 
 def _downCall(id : InputId):
     update(id , 1)
@@ -219,7 +224,12 @@ class Bind:
     enabled : bool
     thread : threading.Thread | None
 
-    def __call__(self , id : InputId) -> bool:
+    def __call__(self , trigger : InputId) -> bool:
+        id = self.input[0]
+        if trigger != id:
+            if inputTStamps.get(id) != None and now() - inputTStamps[id] > hotkeyBuffer: return False
+            self(id)
+            
         if not self.enabled or (self.thread != None and self.thread.is_alive()): return False
         for i in self.input:
             if not get(i): return False
@@ -244,6 +254,8 @@ class Bind:
         # commit to handlers
         self.set.add(self)
         InputConnection.get(id).add(self)
+        for i in self.input:
+            InputConnection.get(i).add(self)
 
     def toggle(self , enabled : bool):
         self.enabled = enabled
