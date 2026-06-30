@@ -79,7 +79,9 @@ hotkeyBuffer = 150
 stateTS : Dict[InputId , int] = dict()
 def th():
     while not exitEvent.wait(hotkeyBuffer * 10):
-        for i , t in stateTS.items(): stateTS.pop(i) if now() - t > hotkeyBuffer else None
+        garb = set()
+        for i , t in stateTS.items(): garb.add(i) if now() - t > hotkeyBuffer else None
+        for i in garb: stateTS.pop(i)
 Thread(target=th).start()
 
 @overload
