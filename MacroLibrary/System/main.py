@@ -53,7 +53,7 @@ class BindData(Dict[str , Set[KeybindEntry | Set[KeybindEntry]]]):
         self[category].add((input , call))
 
 class Sys:
-    state = State(value = True)
+    state = State(value = False)
     loaded : bool = False
     appId : str | None = None
     
@@ -64,7 +64,6 @@ class Sys:
     @classmethod
     def toggle(cls , state : bool | None = None):
         if state == None: state = not cls.state()
-        if state == cls.state(): return
 
         # check active window
         win = pygetwindow.getActiveWindow()
