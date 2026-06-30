@@ -53,7 +53,7 @@ class BindData(Dict[str , Set[KeybindEntry | Set[KeybindEntry]]]):
         self[category].add((input , call))
 
 class Sys:
-    state = State(value = False)
+    state = State(value = True)
     loaded : bool = False
     appId : str | None = None
     
@@ -64,14 +64,13 @@ class Sys:
     @classmethod
     def toggle(cls , state : bool | None = None):
         if state == None: state = not cls.state()
+        if state == cls.state(): return
 
         # check active window
         win = pygetwindow.getActiveWindow()
         if win != None: win = win.title
         print("active window:" , win)
         if cls.appId != None and (win != None and str(win) != cls.appId): state = False
-
-        cls.state.update(state)
 
         for e in cls.callbinds:
             if e in cls.sysbinds: e.toggle(True); continue
@@ -83,6 +82,7 @@ class Sys:
         if not state:
             for b in cls.sysbinds: Input.Connection.get(b.input[0]).toggle(True)
 
+        cls.state.update(state)
         print("-- system " + ("enabled" if cls.state() else "disabled") + " --")
 
     @classmethod
@@ -174,7 +174,7 @@ class Sys:
 # sys binds
 Sys.sysbinds.add(Input.Bind("F12" , lambda id : Sys.exit()))
 Sys.sysbinds.add(Input.Bind("F1" , lambda id : Sys.toggle()))
-Sys.sysbinds.add(Input.Bind("F1 , LAlt" , lambda id: Sys.toggle(False)))
+Sys.sysbinds.add(Input.Bind("F2" , lambda id: Sys.toggle(False)))
 
 
 __all__ = ["Sys" , "config"]

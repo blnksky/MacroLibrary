@@ -2,6 +2,7 @@ from .common import *
 from .Structures import *
 import queue
 
+
 # input state handling
 INPUT_IDS = {
     # Mouse
@@ -68,12 +69,44 @@ PASSTHROUGH_INPUTS = {
 s = set()
 for i in PASSTHROUGH_INPUTS: s.add(i.lower())
 PASSTHROUGH_INPUTS |= s
-inputTStamps : Dict[InputId , int] = dict()
-hotkeyBuffer = 200
 
 inputStates : Dict[InputId , int] = {}
 inputQueue : List = []
 
+
+# input buffer
+hotkeyBuffer = 150
+stateTS : Dict[InputId , int] = dict()
+def th():
+    while not exitEvent.wait(hotkeyBuffer * 10):
+        for i , t in stateTS.items(): stateTS.pop(i) if now() - t > hotkeyBuffer else None
+Thread(target=th).start()
+
+@overload
+def last(id : InputId) -> Tuple[bool , int]:
+    """
+    returns the last input state change if recorded, else a default tuple
+    """
+
+@overload
+def last(id : InputId , state : bool) -> int:
+    """
+    returns the time of the last corresponding input state change if recorded, else 0
+    """
+
+def last(id : InputId , state = None):
+    id = normalize(id)
+    if state != None:
+        i = id + " " + ("down" if state else "up")
+        return stateTS[i] if i in stateTS else 0 
+    else:
+        t1 = last(id , True)
+        t2 = last(id , False)
+        c = t1 >= t2
+        return (c , t1 if c else t2)
+
+
+# funcs
 T = TypeVar("T" , InputSig , InputId)
 def normalize(i : T) -> T:
     if isinstance(i , tuple):
@@ -107,10 +140,11 @@ def update(id : InputId , incr : int):
     #queue
     if id in inputQueue:
         inputQueue.remove(id)
-        inputTStamps.pop(id)
     if incr > 0:
         inputQueue.insert(0 , id)
-        inputTStamps[id] = now()
+        stateTS[id + " down"] = now()
+    else:
+        stateTS[id + " up"] = now()
 
 def _downCall(id : InputId):
     update(id , 1)
@@ -153,7 +187,7 @@ def resolve(id : InputId):
 
 def wait(id : InputId , timeout : int | None = None , pressed : bool | None = None):
     """
-    Yields the current thread until input 'id' changes to the logical state, by default up
+    Yields the current thread until input 'id' changes to the logical state, by default up. Returns True once input occurs or False once timeout is exceeded.
     """
 
     idstate = re.search(r"down|up" , id.lower())
@@ -210,6 +244,7 @@ def trigger(id : InputId , delay : int = 0):
 down = Event(_downCall)
 up = Event(_upCall)
 
+
 # input binding
 class Bind:
     # cls property
@@ -224,17 +259,16 @@ class Bind:
     enabled : bool
     thread : threading.Thread | None
 
-    def __call__(self , trigger : InputId) -> bool:
-        id = self.input[0]
-        if trigger != id:
-            if inputTStamps.get(id) != None and now() - inputTStamps[id] > hotkeyBuffer: return False
-            self(id)
-            
+    def __call__(self , id : InputId) -> bool:
+        if id != self.input[0]:
+            i = self.input[0]
+            if now() - last(i , True) <= hotkeyBuffer: self(i)
+            return False
         if not self.enabled or (self.thread != None and self.thread.is_alive()): return False
         for i in self.input:
-            if not get(i): return False
-
-        self.thread = threading.Thread(target = lambda: self.call(id))
+            if get(i) or (now() - last(i , False) <= hotkeyBuffer): continue
+            return False
+        self.thread = Thread(target = lambda: self.call(id))
         self.thread.start()
         return True
 
@@ -253,9 +287,7 @@ class Bind:
 
         # commit to handlers
         self.set.add(self)
-        InputConnection.get(id).add(self)
-        for i in self.input:
-            InputConnection.get(i).add(self)
+        for i in input: InputConnection.get(i).add(self)
 
     def toggle(self , enabled : bool):
         self.enabled = enabled
@@ -317,10 +349,10 @@ class InputConnection(Set[Bind]):
         if hotkey == self.hotkey: return
         
         if self.hotkey != None:
-            
             AHK.remove_hotkey(self.hotkey)
             AHK.remove_hotkey(self.hotkey + " Up")
             self.hotkey = None
+            if self.active: self.up()
 
         if hotkey != None:
             # establish AHK callback chain
@@ -370,6 +402,7 @@ class InputConnection(Set[Bind]):
             return
         
         send(id + " Up")
+
 
 # launch setup
 for id in INPUT_IDS: InputConnection.get(id)
