@@ -75,7 +75,7 @@ inputQueue : List = []
 
 
 # input buffer
-hotkeyBuffer = 150
+hotkeyBuffer = 100
 stateTS : Dict[InputId , int] = dict()
 def th():
     while not exitEvent.wait(hotkeyBuffer * 10):
@@ -411,4 +411,4 @@ for id in INPUT_IDS: InputConnection.get(id)
 
 
 Connection = InputConnection
-__all__ = ["normalize" , "isInput" , "down" , "up" , "get" , "send" , "resolve" , "wait" , "buffer"  , "trigger" , "Bind" , "Connection"]
+__all__ = ["normalize" , "isInput" , "down" , "up" , "get" , "send" , "resolve" , "wait" , "buffer"  , "trigger" , "hotkeyBuffer" , "Bind" , "Connection"]
