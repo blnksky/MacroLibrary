@@ -177,10 +177,10 @@ def _send(input : InputSig , state : bool | None):
     """
 def _send(input : InputSig , state : bool | None = None):
     if isinstance(input , tuple):
-        if len(input) == 1: _send(input[0] , state); return
+        if len(input) == 1: _send(input[0] , state); return True
         if state != None:
             for i in input: _send(i , state)
-            return
+            return True
         
         for i in reversed(input):
             if re.search(r" down| up" , i) != None: _send(i); continue
@@ -193,7 +193,7 @@ def _send(input : InputSig , state : bool | None = None):
             if state != None: input = normalize(input) + " " + ("down" if state else "up")
             input = "{" + input + "}"
         AHK.send_input(input)
-        return True
+    return True
 send = Event(_send)
 
 def resolve(id : InputId):
