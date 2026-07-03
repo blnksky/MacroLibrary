@@ -193,6 +193,7 @@ def _send(input : InputSig , state : bool | None = None):
             if state != None: input = normalize(input) + " " + ("down" if state else "up")
             input = "{" + input + "}"
         AHK.send_input(input)
+        return True
 send = Event(_send)
 
 def resolve(id : InputId):
