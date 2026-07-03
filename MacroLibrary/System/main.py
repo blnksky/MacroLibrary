@@ -152,23 +152,23 @@ class Sys:
 
     @classmethod
     def rebind(cls , input : InputSig , output : InputSig):
-        if not isinstance(output , tuple): output = (output,)
-        outid = None
-        outid = output[0]
-        if not Input.isInput(outid): outid = None
-        else:
-            l = list(output)
-            l[0] = outid + " down"
-            output = tuple(l)
+        input = Input.compile(input)
 
-        def call(id):
-            Input.send(output)
-            if outid == None: return
-            Input.wait(id , None , False)
-            Input.send(outid + " up")
+        call : Callable[[InputId] , None]
+        if not Input.isInput(output):
+            def f(id): Input.send(output)
+            call = f
+        else:
+            output = Input.compile(output)
+            def f(id):
+                Input.send(tuple(reversed(output)) , True)
+                Input.wait(id , None , False)
+                Input.send(output , False)
+            call = f
         bind = Input.Bind(input , call)
         bind.toggle(cls.state())
         cls.callbinds.add(bind)
+        
         return bind
 # sys binds
 Sys.sysbinds.add(Input.Bind("F12" , lambda id : Sys.exit()))

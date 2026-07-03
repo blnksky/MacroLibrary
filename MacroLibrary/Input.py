@@ -110,19 +110,28 @@ def last(id : InputId , state = None):
 
 # funcs
 T = TypeVar("T" , InputSig , InputId)
-def normalize(i : T) -> T:
-    if isinstance(i , tuple):
-        l = list(i)
-        for n in range(len(l)) : l[n] = normalize(l[n])
-        i = tuple(l)
-        return i
-    
-    i = i.lower()
-    i = re.sub(r" down| up|{|}|~|!|$|^" , "" , str(i)) # _l|_r
-    
-    return i
+def normalize(input : T) -> T:
+    if isinstance(input , tuple):
+        l = []
+        for i in input: l.append(normalize(i))
+        input = tuple(l)
+    elif isinstance(input , str):
+        input = input.lower()
+        input = re.sub(r" down| up|{|}|~|!|$|^" , "" , input) # _l|_r
+    return input
 
-def isInput(i : InputId): return normalize(i) in INPUT_IDS
+def compile(input : InputSig) -> Tuple[InputId , ...]:
+    if isinstance(input , str):
+        input = tuple(re.split(r" , " , input))
+    l = []
+    for i in input: l.append(i.lower())
+    input = tuple(l)
+    return input
+
+def isInput(input : InputSig):
+    for i in compile(input):
+        if not normalize(i) in INPUT_IDS: return False
+    return True
 
 def get(id : InputId):
     """
@@ -156,27 +165,34 @@ def _upCall(id : InputId):
     update(id , -1)
     return True
 
-def _send(sig : InputSig):
+@overload
+def _send(input : InputSig):
     """
-    Sends the input as virtual input, either as a singular input char when 'sig' is an InputId, or an input combination represented by the reverse order of the tuple 'sig'
+    Sends the input as virtual input, either as a singular input char when 'sig' is an InputId, or an input combination represented by the reverse order of the tuple 'sig'.
+    """ 
+@overload
+def _send(input : InputSig , state : bool | None):
     """
-    
-    if isinstance(sig , tuple) and len(sig) > 1:
-        length = len(sig)
-        l = list(sig)
-        id = l.pop(0)
-        r = l.copy(); r.reverse()
-        for i in r: send(i + " down")
-        send(id)
-        for i in l: send(i + " up")
-        return True
-    elif isinstance(sig , tuple) and len(sig) > 0: sig = sig[0]
-    if not isinstance(sig , str): return False
-
-    if normalize(sig) in INPUT_IDS: sig = "{" + sig + "}"
-    AHK.send_input(sig)
-
-    return True
+    Sends the input as virtual input in the specified down/up state, either as a singular input char when 'sig' is an InputId, or an input combination represented by the reverse order of the tuple 'sig'.
+    """
+def _send(input : InputSig , state : bool | None = None):
+    if isinstance(input , tuple):
+        if len(input) == 1: _send(input[0] , state); return
+        if state != None:
+            for i in input: _send(i , state)
+            return
+        
+        for i in reversed(input):
+            if re.search(r" down| up" , i) != None: _send(i); continue
+            _send(i + " down")
+        for i in input:
+            if re.search(r" down| up" , i) != None: continue
+            _send(i + " up")
+    elif isinstance(input , str):
+        if isInput(input):
+            if state != None: input = normalize(input) + " " + ("down" if state else "up")
+            input = "{" + input + "}"
+        AHK.send_input(input)
 send = Event(_send)
 
 def resolve(id : InputId):
@@ -275,8 +291,7 @@ class Bind:
         return True
 
     def __init__(self , input : InputId | InputSig , call : Callable[[InputId]]):
-        if isinstance(input , str):
-            input = tuple(re.split(r" , " , input))
+        input = compile(input)
         normInput = normalize(input)
         id = normInput[0]
 
@@ -411,4 +426,4 @@ for id in INPUT_IDS: InputConnection.get(id)
 
 
 Connection = InputConnection
-__all__ = ["normalize" , "isInput" , "down" , "up" , "get" , "send" , "resolve" , "wait" , "buffer"  , "trigger" , "hotkeyBuffer" , "Bind" , "Connection"]
+__all__ = ["normalize" , "compile" , "isInput" , "down" , "up" , "get" , "send" , "resolve" , "wait" , "buffer"  , "trigger" , "hotkeyBuffer" , "Bind" , "Connection"]
