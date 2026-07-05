@@ -390,20 +390,31 @@ class InputConnection(Set[Bind]):
         
         block = False
         if len(self.sorted) > 0:
-            success = False
             def sort(b : Bind):
                 priority = 0
                 for i in b.input:
                     if not i in inputQueue: continue
                     priority += inputQueue.index(i)
                 return priority
+            
+            for _ , l in sorted(self.sorted.items() , key = lambda p:p[0] , reverse = False):
+                for b in sorted(l , key = sort): b(id) if not b.block else None
+
             for _ , l in sorted(self.sorted.items() , key = lambda p:p[0] , reverse = True):
                 for b in sorted(l , key = sort):
-                    if not b(id): continue
-                    block = b.block
-                    success = True
-                    if block: break
-                if success: break
+                    if not b.block or not b(id): continue
+                    block = True
+                    break
+                if block: break
+
+            #for _ , l in sorted(self.sorted.items() , key = lambda p:p[0] , reverse = True):
+            #    for b in sorted(l , key = sort):
+            #        if not b.block or not b(id): continue
+            #        block = b.block
+            #        success = True
+            #        if block: break
+            #    if success: break
+        
         if block or not self.block():
             self.blocked = True
             return
