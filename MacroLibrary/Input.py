@@ -399,13 +399,13 @@ class InputConnection(Set[Bind]):
             
             for _ , l in sorted(self.sorted.items() , key = lambda p:p[0] , reverse = False):
                 for b in sorted(l , key = sort): b(id) if not b.block else None
-            if self.block():
-                for _ , l in sorted(self.sorted.items() , key = lambda p:p[0] , reverse = True):
-                    for b in sorted(l , key = sort):
-                        if not b.block or not b(id): continue
-                        block = True
-                        break
-                    if block: break
+
+            for _ , l in sorted(self.sorted.items() , key = lambda p:p[0] , reverse = True):
+                for b in sorted(l , key = sort):
+                    if not b.block or not b(id): continue
+                    block = True
+                    break
+                if block: break
 
             #for _ , l in sorted(self.sorted.items() , key = lambda p:p[0] , reverse = True):
             #    for b in sorted(l , key = sort):
