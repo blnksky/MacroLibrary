@@ -283,12 +283,15 @@ class Bind:
             i = self.input[0]
             if now() - last(i , True) <= hotkeyBuffer: self(i)
             return False
-        if not self.enabled or (self.thread != None and self.thread.is_alive()): return False
+        if not self.enabled: return False
+        if self.thread != None and self.thread.is_alive(): return True
+
         for i in self.input:
             if get(i) or (now() - last(i , False) <= hotkeyBuffer): continue
             return False
         self.thread = Thread(target = lambda: self.call(id))
         self.thread.start()
+        
         return True
 
     def __init__(self , input : InputId | InputSig , call : Callable[[InputId]]):
