@@ -273,6 +273,7 @@ class Bind:
     input : Final[Tuple[InputId , ...]]
     call : Final[Callable[[InputId]]]
     block : Final[bool]
+    inputState : bool = True
 
     # dynamic property
     enabled : bool
@@ -302,6 +303,7 @@ class Bind:
         self.input = normInput
         self.call = call
         self.block = re.match("~" , input[0]) == None
+        if re.search(r" up" , input[0]) != None: self.inputState = False
 
         self.enabled = False
         self.thread = None
@@ -322,6 +324,7 @@ class InputConnection(Set[Bind]):
     active : bool
     blocked : bool
     sorted : Dict[int , List[Bind]]
+    sortedUp : Dict[int , List[Bind]]
 
     @classmethod
     def get(cls , id : InputId) -> InputConnection:
@@ -335,8 +338,9 @@ class InputConnection(Set[Bind]):
         if element.block: self.block.update(1)
 
         l = len(element.input)
-        if not self.sorted.get(l): self.sorted[l] = []
-        self.sorted[l].append(element)
+        f = self.sorted if element.inputState else self.sortedUp
+        if not f.get(l): f[l] = []
+        f[l].append(element)
 
         return res
 
@@ -360,6 +364,7 @@ class InputConnection(Set[Bind]):
         self.blocked = False
         self.dict[id] = self
         self.sorted = {}
+        self.sortedUp = {}
 
     def toggle(self , enabled : bool | None = None):
         if enabled == None: enabled = self.hotkey != None
@@ -385,38 +390,36 @@ class InputConnection(Set[Bind]):
             AHK.add_hotkey(hotkey , lambda: self.down() , errorHandler)
             AHK.add_hotkey(hotkey + " Up" , lambda: self.up() , errorHandler)    
 
+    def launch(self , inputState : bool) -> bool:
+        if len(self.sorted) <= 0: return False
+
+        id = self.id
+        def sort(b : Bind):
+            priority = 0
+            for i in b.input:
+                if not i in inputQueue: continue
+                priority += inputQueue.index(i)
+            return priority
+        
+        f = self.sorted if inputState else self.sortedUp
+
+        for _ , l in sorted(f.items() , key = lambda p:p[0] , reverse = False):
+            for b in sorted(l , key = sort): b(id) if not b.block else None
+
+        for _ , l in sorted(f.items() , key = lambda p:p[0] , reverse = True):
+            for b in sorted(l , key = sort):
+                if not b.block or not b(id): continue
+                return True
+            
+        return False
+
     def down(self):
         if self.active: return
         self.active = True
         id = self.id
+
         down(id)
-        
-        block = False
-        if len(self.sorted) > 0:
-            def sort(b : Bind):
-                priority = 0
-                for i in b.input:
-                    if not i in inputQueue: continue
-                    priority += inputQueue.index(i)
-                return priority
-            
-            for _ , l in sorted(self.sorted.items() , key = lambda p:p[0] , reverse = False):
-                for b in sorted(l , key = sort): b(id) if not b.block else None
-
-            for _ , l in sorted(self.sorted.items() , key = lambda p:p[0] , reverse = True):
-                for b in sorted(l , key = sort):
-                    if not b.block or not b(id): continue
-                    block = True
-                    break
-                if block: break
-
-            #for _ , l in sorted(self.sorted.items() , key = lambda p:p[0] , reverse = True):
-            #    for b in sorted(l , key = sort):
-            #        if not b.block or not b(id): continue
-            #        block = b.block
-            #        success = True
-            #        if block: break
-            #    if success: break
+        block = self.launch(True)
 
         if block or not self.block():
             self.blocked = True
@@ -426,12 +429,16 @@ class InputConnection(Set[Bind]):
 
     def up(self):
         if not self.active: return
-        id = self.id
-        up(id)
         self.active = False
+        id = self.id
+
+        block = self.launch(False)
+        up(id)
+
         if self.blocked or not self.block():
             self.blocked = False
             return
+        if block: return
         
         send(id + " Up")
 

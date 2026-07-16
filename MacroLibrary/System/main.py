@@ -153,9 +153,11 @@ class Sys:
     @classmethod
     def rebind(cls , input : InputSig , output : InputSig):
         input = Input.compile(input)
+        st = re.search(r" down| up" , input[0]) 
+        state = None if st == None else st == " down"
 
         call : Callable[[InputId] , None]
-        if not Input.isInput(output):
+        if not Input.isInput(output) or state != None:
             def f(id): Input.send(output)
             call = f
         else:
