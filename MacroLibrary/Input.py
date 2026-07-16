@@ -310,7 +310,7 @@ class Bind:
 
         # commit to handlers
         self.set.add(self)
-        for i in input: InputConnection.get(i).add(self)
+        for i in self.input: InputConnection.get(i).add(self) if i == id else InputConnection.get(i).peripheral.add(self)
 
     def toggle(self , enabled : bool):
         self.enabled = enabled
@@ -325,6 +325,7 @@ class InputConnection(Set[Bind]):
     blocked : bool
     sorted : Dict[int , List[Bind]]
     sortedUp : Dict[int , List[Bind]]
+    peripheral : Set[Bind]
 
     @classmethod
     def get(cls , id : InputId) -> InputConnection:
@@ -365,6 +366,7 @@ class InputConnection(Set[Bind]):
         self.dict[id] = self
         self.sorted = {}
         self.sortedUp = {}
+        self.peripheral = set()
 
     def toggle(self , enabled : bool | None = None):
         if enabled == None: enabled = self.hotkey != None
@@ -420,6 +422,7 @@ class InputConnection(Set[Bind]):
 
         down(id)
         block = self.launch(True)
+        for b in self.peripheral: b(id)
 
         if block or not self.block():
             self.blocked = True
