@@ -20,10 +20,7 @@ class State(Event[bool] , Generic[T]):
         self._prevState_ = self()
         self.update(value)
 
-    def __call__(self) -> bool:
-        v = self.value
-        if self._get_ != None: v = self._get_(v)
-        return v
+    def __call__(self) -> bool: return self.value
     
     def _update(self , increment : T | None = None):
         value = self.value
@@ -35,6 +32,7 @@ class State(Event[bool] , Generic[T]):
         elif isinstance(increment , int):
             self.counter += increment
             value = self.counter > 0
+        if self._get_ != None: value = self._get_(value)
         
         if value != self.value:
             self.value = value
