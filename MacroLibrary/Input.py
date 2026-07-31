@@ -110,14 +110,15 @@ def last(id : InputId , state = None):
 
 # funcs
 T = TypeVar("T" , InputSig , InputId)
-def normalize(input : T) -> T:
+def normalize(input : T , state : bool = True) -> T:
     if isinstance(input , tuple):
         l = []
         for i in input: l.append(normalize(i))
         input = tuple(l)
     elif isinstance(input , str):
         input = input.lower()
-        input = re.sub(r" down| up|{|}|~|!|$|^" , "" , input) # _l|_r
+        ex = r"{|}|~|!|$|^" + ("| down| up" if state else "")
+        input = re.sub(ex , "" , input.lower())
     return input
 
 def compile(input : InputSig) -> Tuple[InputId , ...]:
@@ -464,8 +465,9 @@ def rebind(input : InputSig , output : InputSig) -> Bind:
             wait(id , None , False)
             send(output , False)
         call = f
-        if not rebinds.get(input): rebinds[input] = set()
-        rebinds[input].add(output)
+        k = normalize(input , False)
+        if not rebinds.get(k): rebinds[k] = set()
+        rebinds[k].add(output)
     return Bind(input , call)
 
 def simulate(id : InputId):
@@ -485,6 +487,7 @@ bufferDuration : int = 150
 
 def buffer(inp : InputSig , outp : None | InputSig = None , duration = bufferDuration) -> Bind:
     inp = compile(inp)
+    inp = normalize(inp , False)
     s = State()
     binds = rebinds.get(inp)
     if binds == None:
