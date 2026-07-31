@@ -490,6 +490,8 @@ def buffer(inp : InputSig , outp : None | InputSig = None , duration = bufferDur
     inp = normalize(inp , False)
     s = State()
     binds = rebinds.get(inp)
+    print(binds)
+    print("buffer" , inp)
     if binds == None:
         def l(i = outp or inp):
             while s(): send(i); sleep(25)
