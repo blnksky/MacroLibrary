@@ -504,7 +504,6 @@ def buffer(inp : InputSig , duration = bufferDuration , interval = bufferInterva
                 sleep(interval)
 
     s.connect(lambda s: l())
-    print(duration)
     def f(i , s = s , duration = duration): s.update(1); wait(i); sleep(duration); s.update(-1)
     tl = list(inp)
     tl[0] = f"~{tl[0]}"
