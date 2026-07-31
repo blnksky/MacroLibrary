@@ -447,16 +447,16 @@ class InputConnection(Set[Bind]):
 
 def simulate(id : InputId):
     """
-    simulates inputs as physical, making them trigger any physical input related events in this system
+    simulates inputs as physical, making them trigger any physical input related events in this system (watch out for recursive loops)
     """
 
     c = InputConnection.dict.get(normalize(id))
-    if c == None: return
+    if c == None: send(id); return
     s = re.search(r" down| up" , id.lower())
 
     if s in (None , " down"): c.down()
     if s in (None , " up"): c.up()
-    if not c.block(): send(id)
+    if c.block(): send(id)
 
 
 # launch setup
