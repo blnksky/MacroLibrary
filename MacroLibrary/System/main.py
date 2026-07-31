@@ -152,26 +152,19 @@ class Sys:
 
     @classmethod
     def rebind(cls , input : InputSig , output : InputSig):
-        input = Input.compile(input)
-        st = re.search(r" down| up" , input[0]) 
-        state = None if st == None else st == " down"
-
-        call : Callable[[InputId] , None]
-        if not Input.isInput(output) or state != None:
-            def f(id): Input.send(output)
-            call = f
-        else:
-            output = Input.compile(output)
-            def f(id):
-                Input.send(tuple(reversed(output)) , True)
-                Input.wait(id , None , False)
-                Input.send(output , False)
-            call = f
-        bind = Input.Bind(input , call)
+        bind = Input.rebind(input , output)
         bind.toggle(cls.state())
         cls.callbinds.add(bind)
-        
         return bind
+
+    @classmethod
+    def buffer(cls , inp : InputSig , outp : None | InputSig = None):
+        bind = Input.buffer(inp , outp)
+        bind.toggle(cls.state())
+        cls.callbinds.add(bind)
+        return bind
+
+    
 # sys binds
 Sys.sysbinds.add(Input.Bind("F12" , lambda id : Sys.exit()))
 Sys.sysbinds.add(Input.Bind("F1" , lambda id : Sys.toggle()))

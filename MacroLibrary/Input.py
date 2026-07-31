@@ -171,7 +171,7 @@ def _send(input : InputSig):
     Sends the input as virtual input, either as a singular input char when 'sig' is an InputId, or an input combination represented by the reverse order of the tuple 'sig'.
     """ 
 @overload
-def _send(input : InputSig , state : bool | None):
+def _send(input : InputSig , state : bool | None = None):
     """
     Sends the input as virtual input in the specified down/up state, either as a singular input char when 'sig' is an InputId, or an input combination represented by the reverse order of the tuple 'sig'.
     """
@@ -227,7 +227,7 @@ def wait(id : InputId , timeout : int | None = None , pressed : bool | None = No
     
     return get(id) == pressed
 
-def buffer(id : InputId , timeout : int = 0):
+def toggle(id : InputId , timeout : int = 0):
     """
     sends the input in its specified state, regardless of its current state, then resolves its state automatically based on its physical state, while entirely circumventing input blocks;
     timeout in milliseconds: if specified, it will buffer the resolve until timeout, extending it if state hasn't changed
@@ -445,6 +445,29 @@ class InputConnection(Set[Bind]):
         
         send(id + " Up")
 
+# misc
+rebinds : Dict[InputSig , Set[InputSig]] = {}
+
+def rebind(input : InputSig , output : InputSig) -> Bind:
+    input = compile(input)
+    st = re.search(r" down| up" , input[0]) 
+    state = None if st == None else st == " down"
+
+    call : Callable[[InputId] , None]
+    if not isInput(output) or state != None:
+        def f(id): send(output)
+        call = f
+    else:
+        output = compile(output)
+        def f(id):
+            send(tuple(reversed(output)) , True)
+            wait(id , None , False)
+            send(output , False)
+        call = f
+        if not rebinds.get(input): rebinds[input] = set()
+        rebinds[input].add(output)
+    return Bind(input , call)
+
 def simulate(id : InputId):
     """
     simulates inputs as physical, making them trigger any physical input related events in this system (watch out for recursive loops)
@@ -458,10 +481,39 @@ def simulate(id : InputId):
     if s in (None , " up"): c.up()
     if c.block(): send(id)
 
+bufferDuration : int = 150
+
+def buffer(inp : InputSig , outp : None | InputSig = None , duration = bufferDuration) -> Bind:
+    inp = compile(inp)
+    s = State()
+    binds = rebinds.get(inp)
+    if binds == None:
+        def l(i = outp or inp):
+            while s(): send(i); sleep(25)
+    else:
+        def l(i = outp or inp):
+            while s():
+                send(i)
+                for b in binds: send(b)
+                sleep(25)
+
+    s.connect(lambda s: l())
+    def f(i , s = s): s.update(1); wait(i); sleep(duration); s.update(-1)
+    tl = list(inp)
+    tl[0] = f"~{tl[0]}"
+    inp = tuple(tl)
+    return Bind(inp , f)
 
 # launch setup
 for id in INPUT_IDS: InputConnection.get(id)
 
 
 Connection = InputConnection
-__all__ = ["normalize" , "compile" , "isInput" , "down" , "up" , "get" , "send" , "resolve" , "wait" , "buffer"  , "trigger" , "hotkeyBuffer" , "Bind" , "Connection"]
+__all__ = [
+    "normalize", "compile", "isInput",
+    "down", "up", "get", "send", "resolve", "wait",
+    "hotkeyBuffer", "toggle", "trigger",
+
+    "rebind", "simulate", "buffer", "bufferDuration",
+    "Bind", "Connection",
+]
