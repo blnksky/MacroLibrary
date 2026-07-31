@@ -484,23 +484,23 @@ def simulate(id : InputId):
     if c.block(): send(id)
 
 bufferDuration : int = 150
+bufferInterval : int = 25
 
-def buffer(inp : InputSig , outp : None | InputSig = None , duration = bufferDuration) -> Bind:
+def buffer(inp : InputSig , outp : None | InputSig = None , duration = bufferDuration , interval = bufferInterval) -> Bind:
     inp = compile(inp)
     inp = normalize(inp , False)
     s = State()
-    binds = rebinds.get(inp)
-    print(binds)
-    print("buffer" , inp)
-    if binds == None:
-        def l(i = outp or inp):
-            while s(): send(i); sleep(25)
-    else:
-        def l(i = outp or inp):
+
+    def l(i = outp or inp):
+        binds = rebinds.get(inp)
+        if binds == None:
+            while s(): send(i); sleep(interval)
+        else:
             while s():
                 send(i)
                 for b in binds: send(b)
-                sleep(25)
+                sleep(interval)
+
 
     s.connect(lambda s: l())
     def f(i , s = s): s.update(1); wait(i); sleep(duration); s.update(-1)
@@ -519,6 +519,7 @@ __all__ = [
     "down", "up", "get", "send", "resolve", "wait",
     "hotkeyBuffer", "toggle", "trigger",
 
-    "rebind", "simulate", "buffer", "bufferDuration",
+    "rebind", "simulate",
+    "buffer", "bufferDuration", "bufferInterval",
     "Bind", "Connection",
 ]
