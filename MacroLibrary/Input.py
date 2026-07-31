@@ -445,6 +445,19 @@ class InputConnection(Set[Bind]):
         
         send(id + " Up")
 
+def simulate(id : InputId):
+    """
+    simulates inputs as physical, making them trigger any physical input related events in this system
+    """
+
+    c = InputConnection.dict.get(normalize(id))
+    if c == None: return
+    s = re.search(r" down| up" , id.lower())
+
+    if s in (None , " down"): c.down()
+    if s in (None , " up"): c.up()
+    if not c.block(): send(id)
+
 
 # launch setup
 for id in INPUT_IDS: InputConnection.get(id)
