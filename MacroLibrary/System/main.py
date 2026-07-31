@@ -158,8 +158,8 @@ class Sys:
         return bind
 
     @classmethod
-    def buffer(cls , inp : InputSig , outp : None | InputSig = None):
-        bind = Input.buffer(inp , outp)
+    def buffer(cls , inp : InputSig):
+        bind = Input.buffer(inp)
         bind.toggle(cls.state())
         cls.callbinds.add(bind)
         return bind

@@ -113,7 +113,7 @@ T = TypeVar("T" , InputSig , InputId)
 def normalize(input : T , state : bool = True) -> T:
     if isinstance(input , tuple):
         l = []
-        for i in input: l.append(normalize(i))
+        for i in input: l.append(normalize(i , state))
         input = tuple(l)
     elif isinstance(input , str):
         input = input.lower()
@@ -486,13 +486,15 @@ def simulate(id : InputId):
 bufferDuration : int = 150
 bufferInterval : int = 25
 
-def buffer(inp : InputSig , outp : None | InputSig = None , duration = bufferDuration , interval = bufferInterval) -> Bind:
+def buffer(inp : InputSig , duration = bufferDuration , interval = bufferInterval) -> Bind:
     inp = compile(inp)
     inp = normalize(inp , False)
     s = State()
 
-    def l(i = outp or inp):
-        binds = rebinds.get(inp)
+    def l(i = inp , interval = interval):
+        if not s(): return
+
+        binds = rebinds.get(i)
         if binds == None:
             while s(): send(i); sleep(interval)
         else:
@@ -501,13 +503,14 @@ def buffer(inp : InputSig , outp : None | InputSig = None , duration = bufferDur
                 for b in binds: send(b)
                 sleep(interval)
 
-
     s.connect(lambda s: l())
-    def f(i , s = s): s.update(1); wait(i); sleep(duration); s.update(-1)
+    print(duration)
+    def f(i , s = s , duration = duration): s.update(1); wait(i); sleep(duration); s.update(-1)
     tl = list(inp)
     tl[0] = f"~{tl[0]}"
     inp = tuple(tl)
     return Bind(inp , f)
+
 
 # launch setup
 for id in INPUT_IDS: InputConnection.get(id)
