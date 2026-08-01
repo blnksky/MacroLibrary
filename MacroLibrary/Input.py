@@ -110,14 +110,14 @@ def last(id : InputId , state = None):
 
 # funcs
 T = TypeVar("T" , InputSig , InputId)
-def normalize(input : T , state : bool = True) -> T:
+def normalize(input : T , state : bool = True , passthrough : bool = True) -> T:
     if isinstance(input , tuple):
         l = []
-        for i in input: l.append(normalize(i , state))
+        for i in input: l.append(normalize(i , state=state , passthrough=passthrough))
         input = tuple(l)
     elif isinstance(input , str):
         input = input.lower()
-        ex = r"{|}|~|!|$|^" + ("| down| up" if state else "")
+        ex = r"{|}|#|!|$|^" + ("| down| up" if state else "") + ("|~" if passthrough else "")
         input = re.sub(ex , "" , input.lower())
     return input
 
@@ -451,7 +451,7 @@ rebinds : Dict[InputSig , Set[InputSig]] = {}
 
 def rebind(input : InputSig , output : InputSig) -> Bind:
     input = compile(input)
-    st = re.search(r" down| up" , input[0]) 
+    st = re.search(r" down| up" , input[0].lower()) 
     state = None if st == None else st == " down"
 
     call : Callable[[InputId] , None]
@@ -465,7 +465,7 @@ def rebind(input : InputSig , output : InputSig) -> Bind:
             wait(id , None , False)
             send(output , False)
         call = f
-        k = normalize(input , False)
+        k = normalize(input , state=False , passthrough=False)
         if not rebinds.get(k): rebinds[k] = set()
         rebinds[k].add(output)
     return Bind(input , call)
@@ -488,20 +488,24 @@ bufferInterval : int = 25
 
 def buffer(inp : InputSig , duration = bufferDuration , interval = bufferInterval) -> Bind:
     inp = compile(inp)
+    passthrough = re.search(r"~" , inp[0])
     inp = normalize(inp , False)
+    passinp = ("~" + inp[0] , *inp[1:])
     s = State()
 
-    def l(i = inp , interval = interval):
+    def l(i = inp , passinp = passinp , interval = interval):
         if not s(): return
 
-        binds = rebinds.get(i)
-        if binds == None:
-            while s(): send(i); sleep(interval)
-        else:
-            while s():
-                send(i)
+        binds = set() | (rebinds.get(i) or set())
+        passthrough = len(binds) <= 0
+        binds |= (rebinds.get(passinp) or set())
+        bound = len(binds) > 0
+
+        while s():
+            if bound:
                 for b in binds: send(b)
-                sleep(interval)
+            if passthrough: send(i)
+            sleep(interval)
 
     s.connect(lambda s: l())
     def f(i , s = s , duration = duration): s.update(1); wait(i); sleep(duration); s.update(-1)
