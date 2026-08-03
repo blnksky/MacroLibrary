@@ -165,7 +165,7 @@ def _upCall(id : InputId):
     update(id , -1)
     return True
 
-def _send(input : InputSig , state : bool | None = None , rebinding : bool = False):
+def _send(input : InputSig , state : bool | None = None , rebinding : bool = False , stateDelay : int | None = None):
     """
     Sends the input as virtual input in the specified down/up state, either as a singular input char when 'sig' is an InputId, or an input combination represented by the reverse order of the tuple 'sig'.
     """
@@ -174,7 +174,7 @@ def _send(input : InputSig , state : bool | None = None , rebinding : bool = Fal
         inp = compile(input)
         if state == None: state = re.search(" up" , input[0]) == None
         if inp in rebinds.keys():
-            for i in rebinds[inp]: _send(i , state=state , rebinding=False) if i != inp else None
+            for i in rebinds[inp]: _send(i , state=state , rebinding=False , stateDelay=stateDelay) if i != inp else None
             return
 
     if isinstance(input , tuple):
@@ -185,12 +185,18 @@ def _send(input : InputSig , state : bool | None = None , rebinding : bool = Fal
             for i in reversed(input):
                 if re.search(r" down| up" , i) != None: _send(i , rebinding=rebinding); continue
                 _send(i + " down" , rebinding=rebinding)
+            if stateDelay != None: sleep(stateDelay)
             for i in input:
                 if re.search(r" down| up" , i) != None: continue
                 _send(i + " up" , rebinding=rebinding)
     elif isinstance(input , str):
         if isInput(input):
             if state != None: input = normalize(input) + " " + ("down" if state else "up")
+            if stateDelay != None and not re.search(r" up| down" , input):
+                _send(input + " down")
+                sleep(stateDelay)
+                _send(input + " up")
+                return
             input = "{" + input + "}"
         AHK.send_input(input)
     return True
