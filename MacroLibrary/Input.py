@@ -172,7 +172,9 @@ def _send(input : InputSig , state : bool | None = None , rebinding : bool = Fal
 
     if rebinding:
         inp = compile(input)
-        if state == None: state = re.search(" up" , input[0]) == None
+        if state == None:
+            s = re.search(r" down| up" , input[0])
+            state = None if s == None else s == " down"
         if inp in rebinds.keys():
             for i in rebinds[inp]: _send(i , state=state , rebinding=False , stateDelay=stateDelay) if i != inp else None
             return
