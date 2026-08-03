@@ -72,6 +72,7 @@ PASSTHROUGH_INPUTS |= s
 
 inputStates : Dict[InputId , int] = {}
 inputQueue : List = []
+rebinds : Dict[InputSig , Set[InputSig]] = {}
 
 
 # input buffer
@@ -112,9 +113,9 @@ def last(id : InputId , state = None):
 T = TypeVar("T" , InputSig , InputId)
 def normalize(input : T , state : bool = True , passthrough : bool = True) -> T:
     if isinstance(input , tuple):
-        l = []
-        for i in input: l.append(normalize(i , state=state , passthrough=passthrough))
-        input = tuple(l)
+        inp = ()
+        for idx in range(len(input)): inp = inp + (normalize(input[idx]),)
+        input = inp
     elif isinstance(input , str):
         input = input.lower()
         ex = r"{|}|#|!|$|^" + ("| down| up" if state else "") + ("|~" if passthrough else "")
@@ -166,29 +167,28 @@ def _upCall(id : InputId):
     update(id , -1)
     return True
 
-@overload
-def _send(input : InputSig):
-    """
-    Sends the input as virtual input, either as a singular input char when 'sig' is an InputId, or an input combination represented by the reverse order of the tuple 'sig'.
-    """ 
-@overload
-def _send(input : InputSig , state : bool | None = None):
+def _send(input : InputSig , state : bool | None = None , rebinding : bool = False):
     """
     Sends the input as virtual input in the specified down/up state, either as a singular input char when 'sig' is an InputId, or an input combination represented by the reverse order of the tuple 'sig'.
     """
-def _send(input : InputSig , state : bool | None = None):
+
+    if rebinding:
+        inp = compile(input)
+        if inp in rebinds.keys():
+            for i in rebinds[inp]: _send(i , state=state , rebinding=False) if i != inp else None
+            return
+
     if isinstance(input , tuple):
-        if len(input) == 1: _send(input[0] , state); return True
+        if len(input) == 1: _send(input[0] , state=state , rebinding=rebinding); return True
         if state != None:
-            for i in input: _send(i , state)
-            return True
-        
-        for i in reversed(input):
-            if re.search(r" down| up" , i) != None: _send(i); continue
-            _send(i + " down")
-        for i in input:
-            if re.search(r" down| up" , i) != None: continue
-            _send(i + " up")
+            for i in input: _send(i , state=state , rebinding=rebinding)
+        else:
+            for i in reversed(input):
+                if re.search(r" down| up" , i) != None: _send(i , rebinding=rebinding); continue
+                _send(i + " down" , rebinding=rebinding)
+            for i in input:
+                if re.search(r" down| up" , i) != None: continue
+                _send(i + " up" , rebinding=rebinding)
     elif isinstance(input , str):
         if isInput(input):
             if state != None: input = normalize(input) + " " + ("down" if state else "up")
@@ -269,6 +269,8 @@ up = Event(_upCall)
 class Bind:
     # cls property
     set : Set[Bind] = set()
+    _callchains : Dict[Bind , List[Bind]] = {}
+    _threadBinds : Dict[Thread , Bind] = {}
 
     # data property
     input : Final[Tuple[InputId , ...]]
@@ -276,9 +278,12 @@ class Bind:
     block : Final[bool]
     inputState : bool = True
 
+    # obj property
+    _lock : threading.Lock
+
     # dynamic property
     enabled : bool
-    thread : threading.Thread | None
+    active : bool
 
     def __call__(self , id : InputId) -> bool:
         if id != self.input[0]:
@@ -286,14 +291,21 @@ class Bind:
             if now() - last(i , True) <= hotkeyBuffer: self(i)
             return False
         if not self.enabled: return False
-        if self.thread != None and self.thread.is_alive(): return True
-
         for i in self.input:
             if get(i) or (now() - last(i , False) <= hotkeyBuffer): continue
             return False
-        self.thread = Thread(target = lambda: self.call(id))
-        self.thread.start()
         
+        with self._lock:
+            if self.active: return False
+            self.active = True
+
+        def f():
+            try: self.call(id)
+            finally:
+                with self._lock: self.active = False
+        self.thread = Thread(target=f)
+        self.thread.start()
+
         return True
 
     def __init__(self , input : InputId | InputSig , call : Callable[[InputId]]):
@@ -306,8 +318,10 @@ class Bind:
         self.block = re.match("~" , input[0]) == None
         if re.search(r" up" , input[0]) != None: self.inputState = False
 
+        self._lock = threading.Lock()
+
         self.enabled = False
-        self.thread = None
+        self.active = False
 
         # commit to handlers
         self.set.add(self)
@@ -447,8 +461,6 @@ class InputConnection(Set[Bind]):
         send(id + " Up")
 
 # misc
-rebinds : Dict[InputSig , Set[InputSig]] = {}
-
 def rebind(input : InputSig , output : InputSig) -> Bind:
     input = compile(input)
     st = re.search(r" down| up" , input[0].lower()) 
@@ -472,15 +484,15 @@ def rebind(input : InputSig , output : InputSig) -> Bind:
 
 def simulate(id : InputId):
     """
-    simulates inputs as physical, making them trigger any physical input related events in this system (watch out for recursive loops)
+        simulates inputs as physical, making them trigger any physical input related events in this system (while ignoring physical state changes due to functional liability) (watch out for recursive loops)
     """
 
     c = InputConnection.dict.get(normalize(id))
     if c == None: send(id); return
     s = re.search(r" down| up" , id.lower())
 
-    if s in (None , " down"): c.down()
-    if s in (None , " up"): c.up()
+    if s in (None , " down"): c.launch(True)
+    if s in (None , " up"): c.launch(False)
     if c.block(): send(id)
 
 bufferDuration : int = 150
@@ -503,7 +515,7 @@ def buffer(inp : InputSig , duration = bufferDuration , interval = bufferInterva
 
         while s():
             if bound:
-                for b in binds: send(b)
+                send(i , rebinding = True) #for b in binds: send(b)
             if passthrough: send(i)
             sleep(interval)
 

@@ -3,22 +3,23 @@ import inspect
 
 T = TypeVarTuple("T")
 G = TypeVarTuple("G")
-class Event(Generic[*T]):
-    guard : Callable[[*T] , bool | None]
-    _connections : Set[Connection[*T]]
+P = ParamSpec("P")
+class Event(Generic[P]):
+    guard : Callable[P , bool | None]
+    _connections : Set[Connection[P]]
     _tEvent : threading.Event
-    _waiting : Dict[Thread , Tuple[*T] | Any | None]
+    _waiting : Dict[Thread , Any | None]
 
-    def __init__(self , guard : Callable[[*T] , bool | None] = lambda *args : True) -> None:
+    def __init__(self , guard : Callable[P , bool | None] = lambda *args : True) -> None:
         self.guard = guard
         self.sig = inspect.signature(guard)
         self._connections = set()
         self._tEvent = threading.Event()
         self._waiting = {}
 
-    def __call__(self, *args : *T) -> bool:
-        bound = self.sig.bind_partial(*args); bound.apply_defaults()
-        if not self.guard(*bound.args[:self.guard.__code__.co_argcount]) : return False
+    def __call__(self, *args : P.args , **kwargs : P.kwargs) -> bool:
+        bound = self.sig.bind_partial(*args , **kwargs); bound.apply_defaults()
+        if not self.guard(*bound.args[:self.guard.__code__.co_argcount] , **bound.kwargs) : return False
         
         for t , v in self._waiting.items():
             if v != False : continue
@@ -28,39 +29,39 @@ class Event(Generic[*T]):
         self._tEvent.wait()
         self._tEvent.clear()
 
-        for c in self._connections.copy() : threading.Thread(target = lambda: c(*args)).start()
+        for c in self._connections.copy() : threading.Thread(target = lambda: c(*args , **kwargs)).start()
         return True
 
-    class Connection(Generic[*G]):
-        call : Callable[[*G]]
-        event : Event[*G]
-        def __init__(self , event : Event[*G] , call : Callable[[*G]]) -> None:
+    class Connection(Generic[P]):
+        call : Callable[P]
+        event : Event[P]
+        def __init__(self , event : Event[P] , call : Callable[P]) -> None:
             self.call = call
             self.event = event
             event._connections.add(self)
 
-        def __call__(self , *args : *G) -> Any:
-            return self.call(*args[:self.call.__code__.co_argcount])
+        def __call__(self , *args : P.args , **kwargs : P.kwargs) -> Any:
+            return self.call(*args[:self.call.__code__.co_argcount] , **kwargs)
         
-        def disconnect(self) -> Callable[[*G]]:
+        def disconnect(self) -> Callable[P]:
             self.event._connections.remove(self)
             return self.call
         
-    def connect(self , call : Callable[[*T]]) -> Connection[*T]:
+    def connect(self , call : Callable[P]) -> Connection[P]:
         return self.Connection(self , call)
     
-    def once(self , call : Callable[[*T]]) -> Connection[*T]:
+    def once(self , call : Callable[P]) -> Connection[P]:
         con = self.Connection(self , call)
         call = con.call
 
-        def f(*args : *T):
+        def f(*args : P.args , **kwargs : P.kwargs):
             con.disconnect()
-            return call(*args)
+            return call(*args , **kwargs)
         con.call = f
         
         return con
     
-    def wait(self , timeout : int | None = None) -> tuple[*T] | Any:
+    def wait(self , timeout : int | None = None) -> Any:
         """
         Yield current thread until either timeout or an event, returning the arguments of the event call.
         """
