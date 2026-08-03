@@ -67,53 +67,63 @@ def truncateCall(base: Callable, call: Callable) -> Callable:
         bound = base_sig.bind_partial(*args, **kwargs)
         bound.apply_defaults()
 
-        available = list(bound.arguments.values())
-        used_positions = set()
+        # Flatten the bound arguments into positional and named forms.
+        positional = []
+        named = {}
 
+        for name, param in base_sig.parameters.items():
+            if name not in bound.arguments:
+                continue
+
+            value = bound.arguments[name]
+
+            match param.kind:
+                case inspect.Parameter.POSITIONAL_ONLY:
+                    positional.append(value)
+
+                case inspect.Parameter.POSITIONAL_OR_KEYWORD:
+                    positional.append(value)
+                    named[name] = value
+
+                case inspect.Parameter.KEYWORD_ONLY:
+                    named[name] = value
+
+                case inspect.Parameter.VAR_POSITIONAL:
+                    positional.extend(value)
+
+                case inspect.Parameter.VAR_KEYWORD:
+                    named.update(value)
+
+        pos = 0
         out_args = []
         out_kwargs = {}
 
         for param in call_params:
-            # Skip variadic handling for now
-            if param.kind is inspect.Parameter.VAR_POSITIONAL:
-                for i, value in enumerate(available):
-                    if i not in used_positions:
-                        out_args.append(value)
-                continue
+            match param.kind:
+                case inspect.Parameter.POSITIONAL_ONLY:
+                    if pos < len(positional):
+                        out_args.append(positional[pos])
+                        pos += 1
 
-            if param.kind is inspect.Parameter.VAR_KEYWORD:
-                for key, value in bound.arguments.items():
-                    if key not in call_sig.parameters:
-                        out_kwargs[key] = value
-                continue
+                case inspect.Parameter.POSITIONAL_OR_KEYWORD:
+                    if param.name in named:
+                        out_args.append(named[param.name])
+                    elif pos < len(positional):
+                        out_args.append(positional[pos])
+                        pos += 1
 
-            # 1. Prefer name matching
-            if param.name in bound.arguments:
-                value = bound.arguments[param.name]
-                try:
-                    used_positions.add(available.index(value))
-                except ValueError:
-                    pass
+                case inspect.Parameter.KEYWORD_ONLY:
+                    if param.name in named:
+                        out_kwargs[param.name] = named[param.name]
 
-            # 2. Fall back to positional order
-            else:
-                value = None
-                found = False
+                case inspect.Parameter.VAR_POSITIONAL:
+                    out_args.extend(positional[pos:])
+                    pos = len(positional)
 
-                for i, candidate in enumerate(available):
-                    if i not in used_positions:
-                        value = candidate
-                        used_positions.add(i)
-                        found = True
-                        break
-
-                if not found:
-                    continue
-
-            if param.kind is inspect.Parameter.KEYWORD_ONLY:
-                out_kwargs[param.name] = value
-            else:
-                out_args.append(value)
+                case inspect.Parameter.VAR_KEYWORD:
+                    for k, v in named.items():
+                        if k not in call_sig.parameters:
+                            out_kwargs[k] = v
 
         return call(*out_args, **out_kwargs)
 
