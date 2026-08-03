@@ -6,20 +6,22 @@ G = TypeVarTuple("G")
 P = ParamSpec("P")
 class Event(Generic[P]):
     guard : Callable[P , bool | None]
+    _callsig : inspect.Signature
     _connections : Set[Connection[P]]
     _tEvent : threading.Event
     _waiting : Dict[Thread , Any | None]
 
     def __init__(self , guard : Callable[P , bool | None] = lambda *args : True) -> None:
         self.guard = guard
-        self.sig = inspect.signature(guard)
+        self._callsig = inspect.signature(guard)
         self._connections = set()
         self._tEvent = threading.Event()
         self._waiting = {}
 
     def __call__(self, *args : P.args , **kwargs : P.kwargs) -> bool:
-        bound = self.sig.bind_partial(*args , **kwargs); bound.apply_defaults()
-        if not self.guard(*bound.args[:self.guard.__code__.co_argcount] , **bound.kwargs) : return False
+        bound = self._callsig.bind_partial(*args , **kwargs); bound.apply_defaults()
+        args = bound.args; kwargs = bound.kwargs
+        if not self.guard(*args , **kwargs) : return False
         
         for t , v in self._waiting.items():
             if v != False : continue
@@ -29,19 +31,25 @@ class Event(Generic[P]):
         self._tEvent.wait()
         self._tEvent.clear()
 
-        for c in self._connections.copy() : threading.Thread(target = lambda: c(*args , **kwargs)).start()
+        for c in self._connections.copy():
+            threading.Thread(
+                target=c.__call__,
+                args=args,
+                kwargs=kwargs,
+            ).start()
         return True
 
     class Connection(Generic[P]):
         call : Callable[P]
         event : Event[P]
         def __init__(self , event : Event[P] , call : Callable[P]) -> None:
+            call = truncateCall(event.guard , call)
             self.call = call
             self.event = event
             event._connections.add(self)
 
         def __call__(self , *args : P.args , **kwargs : P.kwargs) -> Any:
-            return self.call(*args[:self.call.__code__.co_argcount] , **kwargs)
+            return self.call(*args , **kwargs)
         
         def disconnect(self) -> Callable[P]:
             self.event._connections.remove(self)
