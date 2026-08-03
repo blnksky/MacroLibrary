@@ -477,7 +477,7 @@ def rebind(input : InputSig , output : InputSig) -> Bind:
             wait(id , None , False)
             send(output , False)
         call = f
-        k = normalize(input , state=False , passthrough=False)
+        k = normalize(input , state=False)
         if not rebinds.get(k): rebinds[k] = set()
         rebinds[k].add(output)
     return Bind(input , call)
@@ -500,24 +500,12 @@ bufferInterval : int = 25
 
 def buffer(inp : InputSig , duration = bufferDuration , interval = bufferInterval) -> Bind:
     inp = compile(inp)
-    passthrough = re.search(r"~" , inp[0])
     inp = normalize(inp , False)
-    passinp = ("~" + inp[0] , *inp[1:])
     s = State()
 
-    def l(i = inp , passinp = passinp , interval = interval):
+    def l(i = inp , interval = interval):
         if not s(): return
-
-        binds = set() | (rebinds.get(i) or set())
-        passthrough = len(binds) <= 0
-        binds |= (rebinds.get(passinp) or set())
-        bound = len(binds) > 0
-
-        while s():
-            if bound:
-                send(i , rebinding = True) #for b in binds: send(b)
-            if passthrough: send(i)
-            sleep(interval)
+        while s(): send(i , rebinding = True); sleep(interval)
 
     s.connect(lambda s: l())
     def f(i , s = s , duration = duration): s.update(1); wait(i); sleep(duration); s.update(-1)
