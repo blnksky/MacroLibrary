@@ -43,7 +43,7 @@ class Event(Generic[P]):
         call : Callable[P]
         event : Event[P]
         def __init__(self , event : Event[P] , call : Callable[P]) -> None:
-            call = truncateCall(event.guard , call)
+            call = matchParams(event.guard , call)
             self.call = call
             self.event = event
             event._connections.add(self)

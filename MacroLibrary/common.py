@@ -51,12 +51,12 @@ def inputYield(id : InputId , call : Callable) -> None:
     if re.match("down" , id): lambda:() #placeholder
     else: lambda:() #placeholder
 
-# truncateCall
+# matchParams
 import functools
 import inspect
 from typing import Callable
 
-def truncateCall(base: Callable, call: Callable) -> Callable:
+def matchParams(base: Callable, call: Callable) -> Callable:
     base_sig = inspect.signature(base)
     call_sig = inspect.signature(call)
 

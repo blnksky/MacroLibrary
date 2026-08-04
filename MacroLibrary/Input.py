@@ -319,6 +319,7 @@ class Bind:
         input = compile(input)
         normInput = normalize(input)
         id = normInput[0]
+        call = matchParams(lambda id:None , call)
 
         self.input = normInput
         self.call = call
