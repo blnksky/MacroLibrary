@@ -40,4 +40,13 @@ class State(Event[bool] , Generic[T]):
         
         return True
 
+    def __enter__(self):
+        if self() and not self.wait(self.buffer): raise TimeoutError()
+        self.update(True if isinstance(self.value , bool) else 1)
+        return self
+
+    def __exit__(self , exc_type, exc_value, traceback):
+        self.update(False if isinstance(self.value , bool) else -1)
+
+
 __all__ = ["State"]
