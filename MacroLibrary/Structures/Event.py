@@ -76,9 +76,7 @@ class Event(Generic[P]):
         thread = threading.current_thread()
         self._waiting[thread] = False
         self._tEvent.wait((timeout / 1000) if timeout != None else None)
-        
-        args = self._waiting.pop(thread)
-        return args
+        return self._waiting.pop(thread)
 
 
 __all__ = ["Event"]

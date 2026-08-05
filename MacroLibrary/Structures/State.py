@@ -40,6 +40,17 @@ class State(Event[bool] , Generic[T]):
         
         return True
 
+    def wait(self , timeout : int | None = None) -> Any:
+        """
+        Yield current thread until either timeout or positive state change
+        """
+
+        timeout = timeout or self.buffer
+        t = now()
+        s = self()
+        while not s and (timeout == None or now() - t <= timeout): s = super().wait(timeout - (now() - t) if timeout != None else None)
+        return s
+
     def __enter__(self):
         if self() and not self.wait(self.buffer): raise TimeoutError()
         self.update(True if isinstance(self.value , bool) else 1)
