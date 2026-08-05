@@ -40,19 +40,16 @@ class State(Event[bool] , Generic[T]):
         
         return True
 
-    def wait(self , timeout : int | None = None) -> Any:
+    def wait(self , timeout : int | None = None , value : bool | None = None) -> Any:
         """
-        Yield current thread until either timeout or positive state change
+        Yield current thread until either timeout or positive state change / the specified value is reached. Returns false on timeout
         """
 
-        timeout = timeout or self.buffer
-        t = now()
-        s = self()
-        while not s and (timeout == None or now() - t <= timeout): s = super().wait(timeout - (now() - t) if timeout != None else None)
-        return s
+        if value != None and self() == value: return True
+        return super().wait(timeout , value)
 
     def __enter__(self):
-        if self() and not self.wait(self.buffer): raise TimeoutError()
+        if not self.wait(self.buffer , False): raise TimeoutError()
         self.update(True if isinstance(self.value , bool) else 1)
         return self
 

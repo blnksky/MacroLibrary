@@ -9,23 +9,23 @@ class Event(Generic[P]):
     _callsig : inspect.Signature
     _connections : Set[Connection[P]]
     _tEvent : threading.Event
-    _waiting : Dict[Thread , Any | None]
+    _buffer : Dict[Thread , Tuple[Any , ...] | None]
 
     def __init__(self , guard : Callable[P , bool | None] = lambda *args : True) -> None:
         self.guard = guard
         self._callsig = inspect.signature(guard)
         self._connections = set()
         self._tEvent = threading.Event()
-        self._waiting = {}
+        self._buffer = {}
 
     def __call__(self, *args : P.args , **kwargs : P.kwargs) -> bool:
         bound = self._callsig.bind_partial(*args , **kwargs); bound.apply_defaults()
         args = bound.args; kwargs = bound.kwargs
         if not self.guard(*args , **kwargs) : return False
         
-        for t , v in self._waiting.items():
-            if v != False : continue
-            self._waiting[t] = None if len(args) == 0 else args[0] if len(args) == 1 else args
+        for t , v in self._buffer.items():
+            if v != None : continue
+            self._buffer[t] = args
 
         self._tEvent.set()
         self._tEvent.wait()
@@ -69,14 +69,23 @@ class Event(Generic[P]):
         
         return con
     
-    def wait(self , timeout : int | None = None) -> Any:
+    def wait(self , timeout : int | None = None , value : Any | None = None) -> Any:
         """
-        Yield current thread until either timeout or an event, returning the arguments of the event call.
+        Yield current thread until either timeout or an event, returning the arguments of the event call or false on timeout. Returns true instead if specified value is received.
         """
+
+        if value != None:
+            t = now()
+            v = None
+            while v != value and (timeout == None or now() - t <= timeout): v = self.wait(None if timeout == None else timeout - (now() - t))
+            return True
+        
         thread = threading.current_thread()
-        self._waiting[thread] = False
-        self._tEvent.wait((timeout / 1000) if timeout != None else None)
-        return self._waiting.pop(thread)
+        self._buffer[thread] = None
+        if not self._tEvent.wait((timeout / 1000) if timeout != None else None): return False
+
+        args = self._buffer.pop(thread)
+        return None if args == None or len(args) == 0 else args[0] if len(args) == 1 else args
 
 
 __all__ = ["Event"]
