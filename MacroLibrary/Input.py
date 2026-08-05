@@ -3,6 +3,9 @@ from .Structures import *
 import queue
 
 
+# Sys properties
+enabled = State(value=False)
+
 # input state handling
 INPUT_IDS = {
     # Mouse
@@ -170,6 +173,8 @@ def _send(input : InputSig , state : bool | None = None , rebinding : bool = Fal
     Sends the input as virtual input in the specified down/up state, either as a singular input char when 'sig' is an InputId, or an input combination represented by the reverse order of the tuple 'sig'.
     """
 
+    if not enabled(): return False
+    
     if rebinding:
         inp = compile(input)
         if state == None:
@@ -178,7 +183,6 @@ def _send(input : InputSig , state : bool | None = None , rebinding : bool = Fal
         if inp in rebinds.keys():
             for i in rebinds[inp]: _send(i , state=state , rebinding=False , stateDelay=stateDelay) if i != inp else None
             return
-
     if isinstance(input , tuple):
         if len(input) == 1: _send(input[0] , state=state , rebinding=rebinding); return True
         if state != None:
@@ -529,6 +533,7 @@ for id in INPUT_IDS: InputConnection.get(id)
 
 Connection = InputConnection
 __all__ = [
+    "enabled",
     "normalize", "compile", "isInput",
     "down", "up", "get", "send", "resolve", "wait",
     "hotkeyBuffer", "toggle", "trigger",

@@ -53,7 +53,7 @@ class BindData(Dict[str , Set[KeybindEntry | Set[KeybindEntry]]]):
         self[category].add((input , call))
 
 class Sys:
-    state = State(value = False)
+    state = Input.enabled
     loaded : bool = False
     appId : str | None = None
     
