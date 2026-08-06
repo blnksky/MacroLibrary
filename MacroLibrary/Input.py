@@ -287,7 +287,7 @@ class Bind:
     input : Final[Tuple[InputId , ...]]
     call : Final[Callable[[InputId]]]
     block : Final[bool]
-    inputState : bool = True
+    eventState : bool = True
 
     # obj property
     _lock : threading.Lock
@@ -328,7 +328,7 @@ class Bind:
         self.input = normInput
         self.call = call
         self.block = re.match("~" , input[0]) == None
-        if re.search(r" up" , input[0]) != None: self.inputState = False
+        if re.search(r" up" , input[0]) != None: self.eventState = False
 
         self._lock = threading.Lock()
 
@@ -366,7 +366,7 @@ class InputConnection(Set[Bind]):
         if element.block: self.block.update(1)
 
         l = len(element.input)
-        f = self.sorted if element.inputState else self.sortedUp
+        f = self.sorted if element.eventState else self.sortedUp
         if not f.get(l): f[l] = []
         f[l].append(element)
 
@@ -419,8 +419,9 @@ class InputConnection(Set[Bind]):
             AHK.add_hotkey(hotkey , lambda: self.down() , errorHandler)
             AHK.add_hotkey(hotkey + " Up" , lambda: self.up() , errorHandler)    
 
-    def launch(self , inputState : bool) -> bool:
-        if len(self.sorted) <= 0: return False
+    def launch(self , eventState : bool) -> bool:
+        f = self.sorted if eventState else self.sortedUp
+        if len(f) <= 0: return False
 
         id = self.id
         def sort(b : Bind):
@@ -429,8 +430,6 @@ class InputConnection(Set[Bind]):
                 if not i in inputQueue: continue
                 priority += inputQueue.index(i)
             return priority
-        
-        f = self.sorted if inputState else self.sortedUp
 
         for _ , l in sorted(f.items() , key = lambda p:p[0] , reverse = False):
             for b in sorted(l , key = sort): b(id) if not b.block else None
