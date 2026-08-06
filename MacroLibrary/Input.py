@@ -461,8 +461,8 @@ class InputConnection(Set[Bind]):
         self.active = False
         id = self.id
 
-        block = self.launch(False)
         up(id)
+        block = self.launch(False)
 
         if self.blocked or not self.block():
             self.blocked = False
