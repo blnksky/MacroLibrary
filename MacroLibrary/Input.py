@@ -509,7 +509,9 @@ def simulate(id : InputId):
 bufferDuration : int = 150
 bufferInterval : int = 25
 
-def buffer(inp : InputSig , duration = bufferDuration , interval = bufferInterval) -> Bind:
+def buffer(inp : InputSig , duration : int | None = None , interval : int | None = None) -> Bind:
+    duration = duration or bufferDuration
+    interval = interval or bufferInterval
     inp = compile(inp)
     inp = normalize(inp , False)
     s = State()
