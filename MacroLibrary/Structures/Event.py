@@ -1,19 +1,19 @@
 from .common import *
 import inspect
 
-T = TypeVarTuple("T")
-G = TypeVarTuple("G")
 P = ParamSpec("P")
 class Event(Generic[P]):
     guard : Callable[P , bool | None]
     _callsig : inspect.Signature
     _connections : Set[Connection[P]]
+    _synced : List[Connection[P]]
     _tEvent : threading.Event
     _buffer : Dict[Thread , Tuple[Any , ...] | None]
 
     def __init__(self , guard : Callable[P , bool | None] = lambda *args : True) -> None:
         self.guard = guard
         self._callsig = inspect.signature(guard)
+        self._synced = []
         self._connections = set()
         self._tEvent = threading.Event()
         self._buffer = {}
@@ -31,6 +31,7 @@ class Event(Generic[P]):
         self._tEvent.wait()
         self._tEvent.clear()
 
+        for c in self._synced.copy(): c(*args , **kwargs)
         for c in self._connections.copy():
             threading.Thread(
                 target=c.__call__,
@@ -46,20 +47,46 @@ class Event(Generic[P]):
             call = matchParams(event.guard , call)
             self.call = call
             self.event = event
-            event._connections.add(self)
 
         def __call__(self , *args : P.args , **kwargs : P.kwargs) -> Any:
             return self.call(*args , **kwargs)
         
         def disconnect(self) -> Callable[P]:
-            self.event._connections.remove(self)
+            if self in self.event._synced: self.event._synced.remove(self)
+            if self in self.event._connections: self.event._connections.remove(self)
             return self.call
-        
-    def connect(self , call : Callable[P]) -> Connection[P]:
-        return self.Connection(self , call)
-    
-    def once(self , call : Callable[P]) -> Connection[P]:
+
+    def sync(self , call : Callable[P]) -> Connection[P]:
+        """
+        Connects a synced callback of call to the event launch. The callback order is determined by the order in which the calls are added.
+        """
+
         con = self.Connection(self , call)
+        self._synced.append(con)
+        return con
+    
+    def connect(self , call : Callable[P]) -> Connection[P]:
+        """
+        Connects a parallel callback of call to the event launch.
+        """
+
+        con = self.Connection(self , call)
+        self._connections.add(con)
+        return con
+    
+    def syncOnce(self , call : Callable[P]) -> Connection[P]:
+            con = self.sync(call)
+            call = con.call
+    
+            def f(*args : P.args , **kwargs : P.kwargs):
+                con.disconnect()
+                return call(*args , **kwargs)
+            con.call = f
+            
+            return con
+
+    def once(self , call : Callable[P]) -> Connection[P]:
+        con = self.connect(call)
         call = con.call
 
         def f(*args : P.args , **kwargs : P.kwargs):
@@ -68,7 +95,7 @@ class Event(Generic[P]):
         con.call = f
         
         return con
-    
+
     def wait(self , timeout : int | None = None , value : Any | None = None) -> Any:
         """
         Yield current thread until either timeout or an event, returning the arguments of the event call or false on timeout. Returns true instead if specified value is received.
