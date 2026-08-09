@@ -417,7 +417,7 @@ class InputConnection(Set[Bind]):
                 raise e
         
             AHK.add_hotkey(hotkey , lambda: self.down() , errorHandler)
-            AHK.add_hotkey(hotkey + " Up" , lambda: self.up() , errorHandler)    
+            AHK.add_hotkey(hotkey + " up" , lambda: self.up() , errorHandler)    
 
     def launch(self , eventState : bool) -> bool:
         f = self.sorted if eventState else self.sortedUp
@@ -454,7 +454,7 @@ class InputConnection(Set[Bind]):
             self.blocked = True
             return
         
-        send(id + " Down")
+        send(id + " down")
 
     def up(self):
         if not self.active: return
@@ -469,7 +469,7 @@ class InputConnection(Set[Bind]):
             return
         if block: return
         
-        send(id + " Up")
+        send(id + " up")
 
 # misc
 def rebind(input : InputSig , output : InputSig) -> Bind:
