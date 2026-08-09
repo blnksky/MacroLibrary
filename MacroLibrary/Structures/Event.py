@@ -75,8 +75,11 @@ class Event(Generic[P]):
         self._connections.add(con)
         return con
     
-    def syncOnce(self , call : Callable[P]) -> Connection[P]:
-            con = self.sync(call)
+    def syncOnce(self , call : Callable[P] , idx : int | None = None) -> Connection[P]:
+            """
+            Connects a synced callback of call to be called once on the next event launch. The callback order is determined by the order in which the calls are added, modified by the optional idx.
+            """
+            con = self.sync(call , idx)
             call = con.call
     
             def f(*args : P.args , **kwargs : P.kwargs):
@@ -87,6 +90,10 @@ class Event(Generic[P]):
             return con
 
     def once(self , call : Callable[P]) -> Connection[P]:
+        """
+        Connects a parallel callback of call to be called once on the next event launch.
+        """
+
         con = self.connect(call)
         call = con.call
 
