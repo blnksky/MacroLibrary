@@ -405,7 +405,7 @@ class InputConnection(Set[Bind]):
         
         if self.hotkey != None:
             AHK.remove_hotkey(self.hotkey)
-            AHK.remove_hotkey(self.hotkey + " Up")
+            AHK.remove_hotkey(self.hotkey + " up")
             self.hotkey = None
             if self.active: self.up()
 
