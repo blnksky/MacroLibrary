@@ -56,13 +56,14 @@ class Event(Generic[P]):
             if self in self.event._connections: self.event._connections.remove(self)
             return self.call
 
-    def sync(self , call : Callable[P]) -> Connection[P]:
+    def sync(self , call : Callable[P] , idx : int | None = None) -> Connection[P]:
         """
-        Connects a synced callback of call to the event launch. The callback order is determined by the order in which the calls are added.
+        Connects a synced callback of call to the event launch. The callback order is determined by the order in which the calls are added, modified by the optional idx.
         """
 
         con = self.Connection(self , call)
-        self._synced.append(con)
+        if idx != None: self._synced.insert(idx , con)
+        else: self._synced.append(con)
         return con
     
     def connect(self , call : Callable[P]) -> Connection[P]:
