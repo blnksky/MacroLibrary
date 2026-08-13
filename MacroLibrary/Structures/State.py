@@ -2,11 +2,13 @@ from .common import *
 from .Event import Event
 
 T = TypeVar("T" , int , bool)
+G = TypeVar("G" , int , bool)
 class State(Event[bool] , Generic[T]):
     value : bool
     counter : int
     update : Event[int]
     buffer : int | None
+    
     _prevState_ : bool
     _get_ : Callable[[bool] , bool] | None = None
 
@@ -16,9 +18,13 @@ class State(Event[bool] , Generic[T]):
         self.counter = 0
         self.update = Event(lambda i: self._update(i))
         self.buffer = buffer
+        self.inverse = self.Inverse(self)
+
         self._get_ = get
         self._prevState_ = self()
+
         self.update(value)
+        
 
     def __call__(self) -> bool: return self.value
     
@@ -56,5 +62,19 @@ class State(Event[bool] , Generic[T]):
     def __exit__(self , exc_type, exc_value, traceback):
         self.update(False if isinstance(self.value , bool) else -1)
 
+    inverse : State.Inverse[T]
+    class Inverse(Generic[G]):
+        state : State[G]
+
+        def __init__(self , state : State[G]) -> None:
+            self.state = state
+
+        def __enter__(self):
+            if not self.state.wait(self.state.buffer , True): raise TimeoutError()
+            self.state.update(False if isinstance(self.state.value , bool) else -1)
+            return self
+        
+        def __exit__(self , exc_type, exc_value, traceback):
+            self.state.update(True if isinstance(self.state.value , bool) else 1)
 
 __all__ = ["State"]
