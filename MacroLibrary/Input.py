@@ -112,7 +112,7 @@ def last(id : InputId , state = None):
 
 # funcs
 T = TypeVar("T" , InputSig , InputId)
-def normalize(input : T , state : bool = True , passthrough : bool = True) -> T:
+def normalize(input : T , state : bool = True , passthrough : bool = True , rebinding : bool = True) -> T:
     if isinstance(input , tuple):
         inp = ()
         for idx in range(len(input)): inp = inp + (normalize(input[idx]),)
@@ -121,7 +121,7 @@ def normalize(input : T , state : bool = True , passthrough : bool = True) -> T:
         input = input.lower()
         s = re.sub(" down| up" , "" , input)
         
-        ex = r"{|}|#|!|$|^" + ("| down| up" if state else "") + ("|~" if passthrough else "")
+        ex = r"{|}|!|$|^" + ("| down| up" if state else "") + ("|~" if passthrough else "") + ("|#" if rebinding else "")
         input = re.sub(ex , "" , input.lower())
         if input == "": input = s[-1]
     return input
@@ -223,8 +223,8 @@ def resolve(id : InputId):
     sends appropriate input signals to synchronize virtual and physical input states of id
     """
 
-    id = normalize(id)
-    send(id + " " + ("down" if get(id) else "up"))
+    id = normalize(id , True , True , False)
+    send(id + " " + ("down" if get(normalize(id)) else "up"))
 
 def wait(id : InputId , timeout : int | None = None , pressed : bool | None = None):
     """
@@ -254,21 +254,20 @@ def toggle(id : InputId , timeout : int = 0):
     sends the input in its specified state, regardless of its current state, then resolves its state automatically based on its physical state, while entirely circumventing input blocks;
     timeout in milliseconds: if specified, it will buffer the resolve until timeout, extending it if state hasn't changed
     """
-
     nid = normalize(id)
     s = (re.search(" up" , id.lower()) == None)
     if s == True and re.search(" down" , id.lower()) == None: id += " down"
 
     send(id)
     if timeout <= 0 and s != get(nid):
-        resolve(nid)
+        resolve(id)
         return
 
     def th():
         t = now() + timeout
         if timeout > 0 and wait(nid , timeout , not s): sleep(t - now())
         else: wait(nid , None , not s)
-        resolve(nid)
+        resolve(id)
     delay(th)
 
 def trigger(id : InputId , delay : int = 0):
@@ -276,9 +275,10 @@ def trigger(id : InputId , delay : int = 0):
     sends respective counter state signals before sending the actual signal, delayed by delay
     """
 
+    nid = normalize(id , rebinding=False)
     s = (re.search(" up" , id.lower()) == None)
     if s == True and re.search(" down" , id.lower()) == None: id += " down"
-    send(normalize(id) + " " + ("up" if s else "down"))
+    send(nid + " " + ("up" if s else "down"))
     sleep(delay)
     send(id)
 
