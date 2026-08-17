@@ -123,7 +123,7 @@ def normalize(input : T , state : bool = True , passthrough : bool = True , rebi
         
         ex = r"{|}|!|$|^" + ("| down| up" if state else "") + ("|~" if passthrough else "") + ("|#" if rebinding else "")
         input = re.sub(ex , "" , input.lower())
-        if input == "": input = s[-1]
+        if input == "" and len(s) > 0: input = s[-1]
     return input
 
 def compile(input : InputSig) -> Tuple[InputId , ...]:
@@ -481,6 +481,7 @@ class InputConnection(Set[Bind]):
         
         send(id + " up")
 
+
 # misc
 def rebind(input : InputSig , output : InputSig) -> Bind:
     input = compile(input)
@@ -519,7 +520,6 @@ def simulate(id : InputId):
 
 bufferDuration : int = 150
 bufferInterval : int = 25
-
 def buffer(inp : InputSig , duration : int | None = None , interval : int | None = None) -> Bind:
     duration = duration or bufferDuration
     interval = interval or bufferInterval
