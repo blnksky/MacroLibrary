@@ -119,8 +119,11 @@ def normalize(input : T , state : bool = True , passthrough : bool = True) -> T:
         input = inp
     elif isinstance(input , str):
         input = input.lower()
+        s = re.sub(" down| up" , "" , input)
+        
         ex = r"{|}|#|!|$|^" + ("| down| up" if state else "") + ("|~" if passthrough else "")
         input = re.sub(ex , "" , input.lower())
+        if input == "": input = s[-1]
     return input
 
 def compile(input : InputSig) -> Tuple[InputId , ...]:
@@ -171,20 +174,27 @@ def _upCall(id : InputId):
 def _send(input : InputSig , state : bool | None = None , rebinding : bool = False , stateDelay : int | None = None):
     """
     Sends the input as virtual input in the specified down/up state, either as a singular input char when 'sig' is an InputId, or an input combination represented by the reverse order of the tuple 'sig'.
+    Input string may contain modifier prefixes like '#' (translates input into respective rebinds) or suffixes like ' down' or ' up' (specifying input state)
     """
 
     if not enabled(): return False
-    
+
+    if isinstance(input , str) and re.search(" , " , input) != None: input = compile(input)
+
+    prfx = input[0] if isinstance(input , tuple) else input
+    f = re.search("#" , prfx)
+    rebinding = rebinding or (f != None and f[0] != normalize(prfx))
     if rebinding:
         inp = compile(input)
         if state == None:
-            s = re.search(r" down| up" , input[0])
-            state = None if s == None else s == " down"
+            s = re.search(r" down| up" , inp[0])
+            state = None if s == None else s[0] == " down"
+        inp = normalize(inp)
         if inp in rebinds.keys():
-            for i in rebinds[inp]: _send(i , state=state , rebinding=False , stateDelay=stateDelay) if i != inp else None
+            for i in rebinds[inp]: send(i , state=state , rebinding=False , stateDelay=stateDelay) if i != inp else None
             return
     if isinstance(input , tuple):
-        if len(input) == 1: _send(input[0] , state=state , rebinding=rebinding); return True
+        if len(input) == 1: _send(input[0] , state=state , rebinding=rebinding , stateDelay=stateDelay); return True
         if state != None:
             for i in input: _send(i , state=state , rebinding=rebinding)
         else:
@@ -198,7 +208,7 @@ def _send(input : InputSig , state : bool | None = None , rebinding : bool = Fal
     elif isinstance(input , str):
         if isInput(input):
             if state != None: input = normalize(input) + " " + ("down" if state else "up")
-            if stateDelay != None and not re.search(r" up| down" , input):
+            if stateDelay != None and re.search(r" down| up" , input) == None:
                 _send(input + " down")
                 sleep(stateDelay)
                 _send(input + " up")
@@ -221,9 +231,9 @@ def wait(id : InputId , timeout : int | None = None , pressed : bool | None = No
     Yields the current thread until input 'id' changes to the logical state, by default up. Returns True once input occurs or False once timeout is exceeded.
     """
 
-    idstate = re.search(r"down|up" , id.lower())
+    idstate = re.search(r" down| up" , id.lower())
     if pressed == None:
-        if idstate != None: pressed = idstate[0] == "down"
+        if idstate != None: pressed = idstate[0] == " down"
         else: pressed = False
 
     id = normalize(id)
@@ -475,7 +485,7 @@ class InputConnection(Set[Bind]):
 def rebind(input : InputSig , output : InputSig) -> Bind:
     input = compile(input)
     st = re.search(r" down| up" , input[0].lower()) 
-    state = None if st == None else st == " down"
+    state = None if st == None else st[0] == " down"
 
     call : Callable[[InputId] , None]
     if not isInput(output) or state != None:
@@ -484,9 +494,9 @@ def rebind(input : InputSig , output : InputSig) -> Bind:
     else:
         output = compile(output)
         def f(id):
-            send(tuple(reversed(output)) , True)
+            send(tuple(reversed(output)) , state=True)
             wait(id , None , False)
-            send(output , False)
+            send(output , state=False)
         call = f
         k = normalize(input , state=False)
         if not rebinds.get(k): rebinds[k] = set()
@@ -501,6 +511,7 @@ def simulate(id : InputId):
     c = InputConnection.dict.get(normalize(id))
     if c == None: send(id); return
     s = re.search(r" down| up" , id.lower())
+    if s != None: s = s[0]
 
     if s in (None , " down"): c.launch(True)
     if s in (None , " up"): c.launch(False)
