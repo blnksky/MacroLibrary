@@ -110,18 +110,15 @@ class Event(Generic[P]):
         Yield current thread until either timeout or an event, returning the arguments of the event call or false on timeout. Returns true instead if specified value is received.
         """
 
-        if value != None:
-            t = now()
-            v = None
-            while v != value and (timeout == None or now() - t <= timeout): v = self.wait(None if timeout == None else timeout - (now() - t))
-            return True
-        
         thread = threading.current_thread()
         self._buffer[thread] = None
-        if not self._tEvent.wait((timeout / 1000) if timeout != None else None): return False
+
+        while True:
+            if not self._tEvent.wait((timeout / 1000) if timeout != None else None): return False
+            if value == None or self._buffer[thread] != value: break
 
         args = self._buffer.pop(thread)
-        return None if args == None or len(args) == 0 else args[0] if len(args) == 1 else args
+        return True if value != None else None if args == None or len(args) == 0 else args[0] if len(args) == 1 else args
 
 
 __all__ = ["Event"]

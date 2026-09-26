@@ -228,13 +228,13 @@ def resolve(id : InputId):
 
 def wait(id : InputId , timeout : int | None = None , pressed : bool | None = None):
     """
-    Yields the current thread until input 'id' changes to the logical state, by default up. Returns True once input occurs or False once timeout is exceeded.
+    Yields the current thread until input 'id' changes to the logical state, by default up. Returns the input state received if timeout isn't stated, otherwise timeout occurrence as a bool.
     """
 
     idstate = re.search(r" down| up" , id.lower())
     if pressed == None:
         if idstate != None: pressed = idstate[0] == " down"
-        else: pressed = False
+        else: pressed = not get(id)
 
     id = normalize(id)
     if pressed == get(id): return True
