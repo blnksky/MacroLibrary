@@ -27,10 +27,6 @@ class Event(Generic[P]):
             if v != None : continue
             self._buffer[t] = args
 
-        self._tEvent.set()
-        self._tEvent.wait()
-        self._tEvent.clear()
-
         for c in self._synced.copy(): c(*args , **kwargs)
         for c in self._connections.copy():
             threading.Thread(
@@ -38,6 +34,11 @@ class Event(Generic[P]):
                 args=args,
                 kwargs=kwargs,
             ).start()
+        
+        self._tEvent.set()
+        self._tEvent.wait()
+        self._tEvent.clear()
+        
         return True
 
     class Connection(Generic[P]):
