@@ -360,8 +360,10 @@ class InputConnection(Set[Bind]):
     hotkey: None | InputId
     active : bool
     blocked : bool
+
     sorted : Dict[int , List[Bind]]
     sortedUp : Dict[int , List[Bind]]
+    blockDict : Dict[InputSig , Bind]
     peripheral : Set[Bind]
 
     @classmethod
@@ -371,7 +373,7 @@ class InputConnection(Set[Bind]):
         if c == None: c = cls(id)
         return c
 
-    def add(self, element: Bind) -> None:
+    def add(self, element : Bind) -> None:
         res = super().add(element)
         if element.block: self.block.update(1)
 
@@ -379,6 +381,12 @@ class InputConnection(Set[Bind]):
         f = self.sorted if element.eventState else self.sortedUp
         if not f.get(l): f[l] = []
         f[l].append(element)
+
+        # overwrite overlapping binds
+        if element.block:
+            prev = self.blockDict.get(element.input)
+            if prev != None and prev in f[l]: self.remove(prev)
+            self.blockDict[element.input] = element
 
         return res
 
@@ -389,6 +397,8 @@ class InputConnection(Set[Bind]):
         l = len(element.input)
         self.sorted[l].remove(element)
         if len(self.sorted[l]) <= 0: self.sorted.pop(l)
+
+        if element.block: self.blockDict.pop(element.input)
 
         return res
 
@@ -401,8 +411,10 @@ class InputConnection(Set[Bind]):
         self.active = False
         self.blocked = False
         self.dict[id] = self
+
         self.sorted = {}
         self.sortedUp = {}
+        self.blockDict = {}
         self.peripheral = set()
 
     def toggle(self , enabled : bool | None = None):
