@@ -10,6 +10,7 @@ dependencies = [
     "keyboard",
     "mouse",
     "pygetwindow",
+    "evdev",
 ]
 
 [tool.setuptools_scm]
