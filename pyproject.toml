@@ -7,8 +7,9 @@ name = "MacroLibrary"
 dynamic = ["version"]
 dependencies = [
     "requests>=2.31.0",
-    "ahk>=1.8.4",
-    "pygetwindow"
+    "keyboard",
+    "mouse",
+    "pygetwindow",
 ]
 
 [tool.setuptools_scm]
