@@ -47,10 +47,10 @@ config = Config({
     "rebinds":  set()
 })
 
-class BindData(Dict[str , Set[KeybindEntry | Set[KeybindEntry]]]):
+class BindData(Dict[str , List[KeybindEntry | List[KeybindEntry]]]):
     def update(self , category : str | Literal["default"] , input : InputSig , call : Callable[[InputId]]):
-        if not self.get(category) : self[category] = set()
-        self[category].add((input , call))
+        if not self.get(category) : self[category] = []
+        self[category].append((input , call))
 
 class Sys:
     state = Input.enabled
@@ -114,7 +114,7 @@ class Sys:
 
                 print("    group:" , category if isinstance(category , str) else "")
 
-                if not isinstance(f , set): return
+                if not isinstance(f , list): return
                 for (input , call) in f:
                     if not isinstance(call , Callable): continue
                     print("      " + call.__name__ + ":" , input)
@@ -127,7 +127,7 @@ class Sys:
                     f = f.get(e) if isinstance(f , dict) else None
                     if f == None : continue
                     print("      group: " + e)
-                    if not isinstance(f , set) : return
+                    if not isinstance(f , list) : return
 
                     for (input , call) in f:
                         print("        " + call.__name__ + ":" , input)

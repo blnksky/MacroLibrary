@@ -507,14 +507,16 @@ class Bind:
         self.enabled = enabled
 
 class InputConnection(Set[Bind]):
+    # class
     dict : Dict[InputId , InputConnection] = {}
 
+    # obj
     id : InputId
     enabled : bool
     block : State
-    hotkey: None | InputId
     active : bool
     blocked : bool
+    blockhook : Callable | None
 
     sorted : Dict[int , List[Bind]]
     sortedUp : Dict[int , List[Bind]]
@@ -559,28 +561,33 @@ class InputConnection(Set[Bind]):
 
     def __init__(self, id : InputId):
         super().__init__()
+        
         self.id = normalize(id)
         self.enabled = False
         self.block = State(get = lambda s: s and (not id in PASSTHROUGH_INPUTS))
         self.block.connect(lambda b: self.toggle())
-        self.hotkey = None
         self.active = False
         self.blocked = False
-        self.dict[id] = self
+        self.blockhook = None
 
         self.sorted = {}
         self.sortedUp = {}
         self.blockDict = {}
         self.peripheral = set()
 
+        self.dict[id] = self
+
     def toggle(self , enabled : bool | None = None):
+        id = self.id
         if enabled == None: enabled = not self.enabled
         if not self.block(): enabled = True
         self.enabled = enabled
 
         if id in AHK_TO_KEY:
-            if self.enabled and self.block(): keyboard.block_key(AHK_TO_KEY[id])
-            else: keyboard.unblock_key(AHK_TO_KEY[id])
+            if self.enabled and self.block():
+                if self.blockhook == None: self.blockhook = keyboard.block_key(AHK_TO_KEY[id])
+            elif self.blockhook != None:
+                keyboard.unhook(self.blockhook); self.blockhook = None
 
     def launch(self , eventState : bool) -> bool:
         f = self.sorted if eventState else self.sortedUp
@@ -637,7 +644,7 @@ class InputConnection(Set[Bind]):
 
 ## hooks
 keyboardhook = None
-def keyboardHandler(event : keyboard.KeyboardEvent):
+def keyboardHandlerInner(event : keyboard.KeyboardEvent):
     try:
         id = KEY_TO_AHK[event.scan_code]
         c = InputConnection.get(id)
@@ -651,6 +658,14 @@ def keyboardHandler(event : keyboard.KeyboardEvent):
     except Exception:
         unhook()
         print(Exception)
+def keyboardHandler(event : keyboard.KeyboardEvent):
+    r = keyboardHandlerInner(event)
+    if r != None: return
+
+    t = event.event_type
+    c = event.scan_code
+    if t == "down" or t == None: keyboard.press(c)
+    if t == "up" or t == None: keyboard.release(c)
 
 mousehook = None
 def mouseHandler(event : mouse.ButtonEvent):
@@ -676,7 +691,7 @@ def hook():
     global keyboardhook , mousehook
     if keyboardhook != None or mousehook != None: unhook()
 
-    keyboardhook = keyboard.hook(keyboardHandler)
+    keyboardhook = keyboard.hook(keyboardHandler , suppress=True)
     mousehook = mouse.hook(mouseHandler)
 
 def unhook():
