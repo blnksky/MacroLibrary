@@ -11,64 +11,6 @@ enabled = State(value=False)
 
 
 ## input identification
-INPUT_IDS = {
-    # Mouse
-    "LButton", "RButton", "MButton", "XButton1", "XButton2",
-    "WheelDown", "WheelUp", "WheelLeft", "WheelRight",
-
-    # Control keys
-    "CapsLock", "Space", "Tab", "Enter", "Escape", "Esc",
-    "Backspace", "BS", "Delete", "Del", "Insert", "Ins",
-    "Home", "End", "PgUp", "PgDn", "Up", "Down", "Left", "Right",
-
-    # Modifiers
-    "Shift", "LShift", "RShift",
-    "Ctrl", "Control", "LCtrl", "RCtrl",
-    "Alt", "LAlt", "RAlt",
-    "LWin", "RWin",
-
-    # Lock keys
-    "NumLock", "ScrollLock",
-
-    # Function keys
-    "F1", "F2", "F3", "F4", "F5", "F6",
-    "F7", "F8", "F9", "F10", "F11", "F12",
-    "F13", "F14", "F15", "F16", "F17", "F18",
-    "F19", "F20", "F21", "F22", "F23", "F24",
-
-    # Numpad
-    "Numpad0", "Numpad1", "Numpad2", "Numpad3", "Numpad4",
-    "Numpad5", "Numpad6", "Numpad7", "Numpad8", "Numpad9",
-    "NumpadDot", "NumpadDel", "NumpadIns",
-    "NumpadClear", "NumpadUp", "NumpadDown",
-    "NumpadLeft", "NumpadRight",
-    "NumpadHome", "NumpadEnd",
-    "NumpadPgUp", "NumpadPgDn",
-    "NumpadDiv", "NumpadMult", "NumpadAdd",
-    "NumpadSub", "NumpadEnter",
-
-    # Media
-    "Volume_Mute", "Volume_Down", "Volume_Up",
-    "Media_Next", "Media_Prev", "Media_Stop", "Media_Play_Pause",
-
-    # Browser
-    "Browser_Back", "Browser_Forward", "Browser_Refresh",
-    "Browser_Stop", "Browser_Search", "Browser_Favorites", "Browser_Home",
-
-    # Misc
-    "PrintScreen", "CtrlBreak", "Pause",
-    "AppsKey", "Sleep", "Help",
-
-    # Letters
-    *[chr(c) for c in range(ord("A"), ord("Z") + 1)],
-
-    # Digits
-    *[str(i) for i in range(10)]
-}
-s = set()
-for i in INPUT_IDS: s.add(i.lower())
-INPUT_IDS |= s
-
 KEY_TO_AHK = {
     # Letters
     0x01E: "a",
@@ -151,26 +93,12 @@ KEY_TO_AHK = {
     0x034: ".",
     0x035: "/",
 
-    # Navigation
-    0x147: "home",
-    0x148: "up",
-    0x149: "pgup",
-    0x14B: "left",
-    0x14D: "right",
-    0x14F: "end",
-    0x150: "down",
-    0x151: "pgdn",
-    0x152: "insert",
-    0x153: "delete",
-
     # Numpad
     0x045: "numlock",
     0x037: "numpadmult",
     0x04A: "numpadsub",
     0x04E: "numpadadd",
     0x053: "numpaddot",
-    0x135: "numpaddiv",
-    0x11C: "numpadenter",
 
     0x052: "numpad0",
     0x04F: "numpad1",
@@ -183,12 +111,29 @@ KEY_TO_AHK = {
     0x048: "numpad8",
     0x049: "numpad9",
 
-    # Extended keys
-    0x15B: "lwin",
-    0x15C: "rwin",
-    0x15D: "appskey",
-    0x137: "printscreen",
-    0x146: "pause",
+
+    ## Extended keys
+    # Navigation
+    "home": "home",
+    "up": "up",
+    "page up": "pgup",
+    "left": "left",
+    "right": "right",
+    "end": "end",
+    "down": "down",
+    "page down": "pgdn",
+    "insert": "insert",
+    "delete": "delete",
+
+    # Numpad
+    "num enter": "numpadenter",
+    "divide": "numpaddiv",
+
+    # misc
+    "left windows": "lwin",
+    "right windows": "rwin",
+    "menu": "appskey",
+    "print screen": "printscreen",
 }
 AHK_TO_KEY = {}
 for i , e in KEY_TO_AHK.items(): AHK_TO_KEY[e] = i
@@ -203,6 +148,8 @@ MOUSE_TO_AHK = {
 }
 AHK_TO_MOUSE = {}
 for i , e in MOUSE_TO_AHK.items(): AHK_TO_MOUSE[e] = i
+
+INPUT_IDS = set(AHK_TO_KEY.keys()) | set(AHK_TO_MOUSE.keys())
 
 # Passthrough Inputs
 PASSTHROUGH_INPUTS = {
@@ -365,9 +312,8 @@ def _send(input : InputSig , state : bool | None = None , rebinding : bool = Fal
                 else: mouse.release(c)
             elif i in AHK_TO_KEY:
                 c = AHK_TO_KEY[i]
-                if state or state == None: keyboard.press(c)
-                if not state or state == None: keyboard.release(c)
-                #keyboard.send(AHK_TO_KEY[i] , True if state == None else state , True if state == None else not state)
+                if state == None or state: keyboard.press(c)
+                if state == None or not state: keyboard.release(c)
         else: keyboard.write(input)
 
     return True
