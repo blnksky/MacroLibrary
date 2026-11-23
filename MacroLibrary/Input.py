@@ -75,9 +75,12 @@ KEY_TO_AHK = {
     0x03A: "capslock",
 
     # Modifiers
+    0x02A: "shift",
     0x02A: "lshift",
     0x036: "rshift",
     0x01D: "ctrl",
+    0x01D: "lctrl",
+    0x01D: "rctrl",
     0x038: "alt",
 
     # Punctuation (physical positions)
