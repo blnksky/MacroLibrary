@@ -2,11 +2,15 @@ from .common import *
 from .Structures import *
 import queue
 
+import keyboard
+import mouse
 
-# Sys properties
+
+## Sys properties
 enabled = State(value=False)
 
-# input state handling
+
+## input identification
 INPUT_IDS = {
     # Mouse
     "LButton", "RButton", "MButton", "XButton1", "XButton2",
@@ -64,21 +68,156 @@ INPUT_IDS = {
 s = set()
 for i in INPUT_IDS: s.add(i.lower())
 INPUT_IDS |= s
-PASSTHROUGH_INPUTS = {
-    # Mouse
-    "LButton", "RButton", "MButton", "XButton1", "XButton2",
-    "WheelDown", "WheelUp", "WheelLeft", "WheelRight"
-}
-s = set()
-for i in PASSTHROUGH_INPUTS: s.add(i.lower())
-PASSTHROUGH_INPUTS |= s
 
+KEY_TO_AHK = {
+    # Letters
+    0x01E: "a",
+    0x030: "b",
+    0x02E: "c",
+    0x020: "d",
+    0x012: "e",
+    0x021: "f",
+    0x022: "g",
+    0x023: "h",
+    0x017: "i",
+    0x024: "j",
+    0x025: "k",
+    0x026: "l",
+    0x032: "m",
+    0x031: "n",
+    0x018: "o",
+    0x019: "p",
+    0x010: "q",
+    0x013: "r",
+    0x01F: "s",
+    0x014: "t",
+    0x016: "u",
+    0x02F: "v",
+    0x011: "w",
+    0x02D: "x",
+    0x015: "y",
+    0x02C: "z",
+
+    # Number row
+    0x002: "1",
+    0x003: "2",
+    0x004: "3",
+    0x005: "4",
+    0x006: "5",
+    0x007: "6",
+    0x008: "7",
+    0x009: "8",
+    0x00A: "9",
+    0x00B: "0",
+
+    # Function keys
+    0x03B: "f1",
+    0x03C: "f2",
+    0x03D: "f3",
+    0x03E: "f4",
+    0x03F: "f5",
+    0x040: "f6",
+    0x041: "f7",
+    0x042: "f8",
+    0x043: "f9",
+    0x044: "f10",
+    0x057: "f11",
+    0x058: "f12",
+
+    # Special keys
+    0x001: "esc",
+    0x00E: "backspace",
+    0x00F: "tab",
+    0x01C: "enter",
+    0x039: "space",
+    0x03A: "capslock",
+
+    # Modifiers
+    0x02A: "lshift",
+    0x036: "rshift",
+    0x01D: "ctrl",
+    0x038: "alt",
+
+    # Punctuation (physical positions)
+    0x00C: "-",
+    0x00D: "=",
+    0x01A: "[",
+    0x01B: "]",
+    0x027: ";",
+    0x028: "'",
+    0x029: "`",
+    0x02B: "\\",
+    0x033: ",",
+    0x034: ".",
+    0x035: "/",
+
+    # Navigation
+    0x147: "home",
+    0x148: "up",
+    0x149: "pgup",
+    0x14B: "left",
+    0x14D: "right",
+    0x14F: "end",
+    0x150: "down",
+    0x151: "pgdn",
+    0x152: "insert",
+    0x153: "delete",
+
+    # Numpad
+    0x045: "numlock",
+    0x037: "numpadmult",
+    0x04A: "numpadsub",
+    0x04E: "numpadadd",
+    0x053: "numpaddot",
+    0x135: "numpaddiv",
+    0x11C: "numpadenter",
+
+    0x052: "numpad0",
+    0x04F: "numpad1",
+    0x050: "numpad2",
+    0x051: "numpad3",
+    0x04B: "numpad4",
+    0x04C: "numpad5",
+    0x04D: "numpad6",
+    0x047: "numpad7",
+    0x048: "numpad8",
+    0x049: "numpad9",
+
+    # Extended keys
+    0x15B: "lwin",
+    0x15C: "rwin",
+    0x15D: "appskey",
+    0x137: "printscreen",
+    0x146: "pause",
+}
+AHK_TO_KEY = {}
+for i , e in KEY_TO_AHK.items(): AHK_TO_KEY[e] = i
+
+# Mouse Buttons
+MOUSE_TO_AHK = {
+    "left": "lbutton",
+    "right": "rbutton",
+    "middle": "mbutton",
+    "x": "xbutton1",
+    "x2": "xbutton2",
+}
+AHK_TO_MOUSE = {}
+for i , e in MOUSE_TO_AHK.items(): AHK_TO_MOUSE[e] = i
+
+# Passthrough Inputs
+PASSTHROUGH_INPUTS = {
+    "lbutton", "rbutton", "mbutton", "xbutton1", "xbutton2",
+    "wheeldown", "wheelup", "wheelleft", "wheelright"
+}
+
+
+## input state handling
 inputStates : Dict[InputId , int] = {}
 inputQueue : List = []
 rebinds : Dict[InputSig , Set[InputSig]] = {}
 
 
-# input buffer
+## input buffer
 hotkeyBuffer = 100
 stateTS : Dict[InputId , int] = dict()
 def th():
@@ -110,7 +249,7 @@ def last(id : InputId , state = None):
         return (c , t1 if c else t2)
 
 
-# funcs
+## features
 T = TypeVar("T" , InputSig , InputId)
 def normalize(input : T , state : bool = True , passthrough : bool = True , rebinding : bool = True) -> T:
     if isinstance(input , tuple):
@@ -139,14 +278,15 @@ def isInput(input : InputSig):
         if not normalize(i) in INPUT_IDS: return False
     return True
 
-def get(id : InputId):
+def get(input : InputSig) -> bool:
     """
     Returns the physical input state of the input 'id'
     """
-    id = normalize(id)
-    #AHK.key_state(key_name = id.upper() , mode = "P") != 0
-    v = inputStates.get(id)
-    return v != None and v > 0
+    input = normalize(compile(input))
+    for id in input:
+        v = inputStates.get(id)
+        if v == None or v <= 0: return False
+    return True
 
 def update(id : InputId , incr : int):
     if inputStates.get(id) == None: inputStates[id] = 0
@@ -180,10 +320,10 @@ def _send(input : InputSig , state : bool | None = None , rebinding : bool = Fal
     if not enabled(): return False
 
     if isinstance(input , str) and re.search(" , " , input) != None: input = compile(input)
-
     prfx = input[0] if isinstance(input , tuple) else input
     f = re.search("#" , prfx)
     rebinding = rebinding or (f != None and f[0] != normalize(prfx))
+
     if rebinding:
         inp = compile(input)
         if state == None:
@@ -207,24 +347,38 @@ def _send(input : InputSig , state : bool | None = None , rebinding : bool = Fal
                 _send(i + " up" , rebinding=rebinding)
     elif isinstance(input , str):
         if isInput(input):
-            if state != None: input = normalize(input) + " " + ("down" if state else "up")
-            if stateDelay != None and re.search(r" down| up" , input) == None:
-                _send(input + " down")
+            i = normalize(input)
+            
+            sm = re.search(r" down | up" , input)
+            if state == None and sm != None: state = {" down":True," up":False}.get(sm.string)
+
+            if stateDelay != None:
+                _send(input , True)
                 sleep(stateDelay)
-                _send(input + " up")
+                _send(input , False)
                 return
-            input = "{" + input + "}"
-        AHK.send_input(input)
+
+            if i in AHK_TO_MOUSE:
+                c = AHK_TO_MOUSE[i]
+                if state == None: mouse.press(c)
+                elif state: mouse.hold(c)
+                else: mouse.release(c)
+            elif i in AHK_TO_KEY:
+                c = AHK_TO_KEY[i]
+                if state or state == None: keyboard.press(c)
+                if not state or state == None: keyboard.release(c)
+                #keyboard.send(AHK_TO_KEY[i] , True if state == None else state , True if state == None else not state)
+        else: keyboard.write(input)
+
     return True
 send = Event(_send)
 
-def resolve(id : InputId):
+def resolve(input : InputSig):
     """
     sends appropriate input signals to synchronize virtual and physical input states of id
     """
-
-    id = normalize(id , True , True , False)
-    send(id + " " + ("down" if get(normalize(id)) else "up"))
+    input = normalize(compile(input) , True , True , False)
+    for id in input: send(id + " " + ("down" if get(normalize(id)) else "up"))
 
 def wait(id : InputId , timeout : int | None = None , pressed : bool | None = None):
     """
@@ -286,7 +440,7 @@ down = Event(_downCall)
 up = Event(_upCall)
 
 
-# input binding
+## input binding
 class Bind:
     # cls property
     set : Set[Bind] = set()
@@ -356,6 +510,7 @@ class InputConnection(Set[Bind]):
     dict : Dict[InputId , InputConnection] = {}
 
     id : InputId
+    enabled : bool
     block : State
     hotkey: None | InputId
     active : bool
@@ -405,6 +560,7 @@ class InputConnection(Set[Bind]):
     def __init__(self, id : InputId):
         super().__init__()
         self.id = normalize(id)
+        self.enabled = False
         self.block = State(get = lambda s: s and (not id in PASSTHROUGH_INPUTS))
         self.block.connect(lambda b: self.toggle())
         self.hotkey = None
@@ -418,28 +574,13 @@ class InputConnection(Set[Bind]):
         self.peripheral = set()
 
     def toggle(self , enabled : bool | None = None):
-        if enabled == None: enabled = self.hotkey != None
-        blocking = self.block()
-        if not blocking: enabled = True
-        
-        hotkey = (("" if blocking else "~") + "$*" + self.id) if enabled else None
-        if hotkey == self.hotkey: return
-        
-        if self.hotkey != None:
-            AHK.remove_hotkey(self.hotkey)
-            AHK.remove_hotkey(self.hotkey + " up")
-            self.hotkey = None
-            if self.active: self.up()
+        if enabled == None: enabled = not self.enabled
+        if not self.block(): enabled = True
+        self.enabled = enabled
 
-        if hotkey != None:
-            # establish AHK callback chain
-            self.hotkey = hotkey
-            def errorHandler(msg : str , e : Exception):
-                print("something went wrong at keybind " + self.id + " : " + msg)
-                raise e
-        
-            AHK.add_hotkey(hotkey , lambda: self.down() , errorHandler)
-            AHK.add_hotkey(hotkey + " up" , lambda: self.up() , errorHandler)    
+        if id in AHK_TO_KEY:
+            if self.enabled and self.block(): keyboard.block_key(AHK_TO_KEY[id])
+            else: keyboard.unblock_key(AHK_TO_KEY[id])
 
     def launch(self , eventState : bool) -> bool:
         f = self.sorted if eventState else self.sortedUp
@@ -476,7 +617,7 @@ class InputConnection(Set[Bind]):
             self.blocked = True
             return
         
-        send(id + " down")
+        send(id , True)
 
     def up(self):
         if not self.active: return
@@ -491,10 +632,60 @@ class InputConnection(Set[Bind]):
             return
         if block: return
         
-        send(id + " up")
+        send(id , False)
 
 
-# misc
+## hooks
+keyboardhook = None
+def keyboardHandler(event : keyboard.KeyboardEvent):
+    try:
+        id = KEY_TO_AHK[event.scan_code]
+        c = InputConnection.get(id)
+        if not c.enabled: return
+
+        if event.event_type == "down": c.down()
+        elif event.event_type == "up": c.up()
+
+        if not c.block(): return
+        else: return False
+    except Exception:
+        unhook()
+        print(Exception)
+
+mousehook = None
+def mouseHandler(event : mouse.ButtonEvent):
+    try:
+        if not isinstance(event , mouse.ButtonEvent): return 
+
+        if event.button == None: return
+
+        id = MOUSE_TO_AHK[event.button]
+        c = InputConnection.get(id)
+        if not c.enabled: return
+
+        if event.event_type == "down": c.down()
+        elif event.event_type == "up": c.up()
+
+        if not c.block(): return
+        else: return False
+    except Exception:
+        unhook()
+        print(Exception)
+
+def hook():
+    global keyboardhook , mousehook
+    if keyboardhook != None or mousehook != None: unhook()
+
+    keyboardhook = keyboard.hook(keyboardHandler)
+    mousehook = mouse.hook(mouseHandler)
+
+def unhook():
+    global keyboardhook , mousehook
+    if keyboardhook != None: keyboard.unhook(keyboardhook); keyboardhook = None
+    if mousehook != None: mouse.unhook(mousehook); mousehook = None
+
+
+## misc
 def rebind(input : InputSig , output : InputSig) -> Bind:
     input = compile(input)
     st = re.search(r" down| up" , input[0].lower()) 
@@ -561,6 +752,8 @@ __all__ = [
     "normalize", "compile", "isInput",
     "down", "up", "get", "send", "resolve", "wait",
     "hotkeyBuffer", "toggle", "trigger",
+
+    "hook", "unhook",
 
     "rebind", "simulate",
     "buffer", "bufferDuration", "bufferInterval",

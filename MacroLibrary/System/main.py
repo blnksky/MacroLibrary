@@ -132,8 +132,8 @@ class Sys:
                     for (input , call) in f:
                         print("        " + call.__name__ + ":" , input)
                         Input.Bind(input , call)
-        
-        AHK.start_hotkeys()
+
+        Input.hook()
         for e in cls.sysbinds: e.toggle(True)
 
         cls.loaded = True
@@ -144,7 +144,7 @@ class Sys:
     def exit(cls) -> bool:
         if not cls.loaded: return False
         cls.toggle(False)
-        AHK.stop_hotkeys()
+        Input.unhook()
         print("-- system exit --")
         exitEvent.set()
         cls.loaded = False
