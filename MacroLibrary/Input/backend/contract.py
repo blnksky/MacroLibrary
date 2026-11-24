@@ -80,9 +80,9 @@ class Backend(ABC):
             return False
 
         parts = (s.id, *s.sides)
-        with self._lock:
-            if any(part in self._held for part in parts):
-                return True
+        #with self._lock:
+        if any(part in self._held for part in parts):
+            return True
         return any(self._is_physically_pressed(keymap.spec(part)) for part in parts)
 
     def release_all(self) -> None:
@@ -123,8 +123,8 @@ class Backend(ABC):
         self._on_idle()
 
     def _dispatch(self, event: InputEvent) -> bool:
-        with self._hooks_lock:
-            hooks = tuple(self._hooks.values())
+        #with self._hooks_lock:
+        hooks = tuple(self._hooks.values())
 
         suppress = False
         for callback, blocking in hooks:
