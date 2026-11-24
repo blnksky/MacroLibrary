@@ -32,7 +32,7 @@ class InputState:
 
     def track(self, event: InputEvent) -> None:
         """Record a physical or injected event."""
-        if event.event_type not in ("down", "up"):
+        if event.injected or event.event_type not in ("down", "up"):
             return
 
         with self._condition:

@@ -58,7 +58,7 @@ class Sys:
     appId : str | None = None
     
     bindData = BindData()
-    callbinds : Set[Input.Bind] = set()
+    binds : Set[Input.Bind] = set()
     sysbinds : Set[Input.Bind] = set()
 
     @classmethod
@@ -73,7 +73,7 @@ class Sys:
 
         # Binds now own their own enabled flag; connections no longer suppress
         # events wholesale, so there is no second pass to keep in sync.
-        for e in cls.callbinds:
+        for e in cls.binds:
             if e in cls.sysbinds: continue
             e.toggle(state)
 
@@ -117,7 +117,7 @@ class Sys:
                 for (input , call) in f:
                     if not isinstance(call , Callable): continue
                     print("      " + call.__name__ + ":" , input)
-                    cls.callbinds.add(Input.Bind(input , call))
+                    cls.binds.add(Input.Bind(input , call))
                 
             elif isinstance(category , list):
                 print("    list: ")
@@ -130,13 +130,13 @@ class Sys:
 
                     for (input , call) in f:
                         print("        " + call.__name__ + ":" , input)
-                        cls.callbinds.add(Input.Bind(input , call))
+                        cls.binds.add(Input.Bind(input , call))
 
         Input.hook()
         for e in cls.sysbinds: e.toggle(True)
 
         cls.loaded = True
-        cls.toggle(True)
+        cls.toggle(False)
         print("loading finished")
 
     @classmethod
@@ -153,14 +153,14 @@ class Sys:
     def rebind(cls , input : InputSig , output : InputSig):
         bind = Input.rebind(input , output)
         bind.toggle(cls.state())
-        cls.callbinds.add(bind)
+        cls.binds.add(bind)
         return bind
 
     @classmethod
     def buffer(cls , inp : InputSig , duration : int | None = None , interval : int | None = None):
         bind = Input.buffer(inp , duration=duration , interval=interval)
         bind.toggle(cls.state())
-        cls.callbinds.add(bind)
+        cls.binds.add(bind)
         return bind
 
     

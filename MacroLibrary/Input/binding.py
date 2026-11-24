@@ -2,7 +2,7 @@
 Bindings and the binding registry.
 
 A ``Bind`` is a declarative rule: "when this signature fires, run this
-callback". Binds are enabled by default and do not own any global state. The
+callback". Binds are disabled by default and do not own any global state. The
 ``Registry`` decides, per event, which binds fire and whether the event is
 consumed. This replaces ``Bind``/``InputConnection``/``block`` bookkeeping from
 the old ``base.py``.

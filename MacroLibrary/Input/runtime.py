@@ -150,7 +150,7 @@ class InputRuntime:
     def resolve(self, input) -> None:
         sig = keymap.parse(input)
         for identifier in sig.ids:
-            self._send(identifier + (" down" if self.state.pressed(identifier) else " up"))
+            self.send(identifier , self.state.pressed(identifier))
 
     def toggle(self, id: str, timeout: int = 0) -> None:
         sig = keymap.parse(id)
@@ -159,7 +159,7 @@ class InputRuntime:
         target = sig.state if sig.state is not None else True
         first = sig.ids[0]
 
-        self._send(id if sig.state is not None else id + " down")
+        self.send(id if sig.state is not None else id + " down")
 
         if timeout <= 0:
             if self.state.pressed(first) != target:
@@ -180,7 +180,7 @@ class InputRuntime:
         target = sig.state if sig.state is not None else True
         self._send((", ".join(sig.ids)) + (" up" if target else " down"))
         sleep(delay)
-        self._send(id)
+        self.send(id)
 
     # ------------------------------------------------------------------
     # Binding
@@ -195,10 +195,10 @@ class InputRuntime:
             raise ValueError("Cannot rebind literal text.")
 
         def on_down(event_id: str) -> None:
-            self._send(output, True)
+            self.send(output, True)
 
         def on_up(event_id: str) -> None:
-            self._send(output, False)
+            self.send(output, False)
 
         binds: list[Bind] = []
         if sig.state in (None, True):
