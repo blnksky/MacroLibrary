@@ -208,7 +208,7 @@ class Registry:
         consuming. An up event is also consumed when its matching down was
         consumed, so a remap never leaks a stray release.
         """
-        if event.event_type not in ("down", "up", "wheel"):
+        if event.injected or event.event_type not in ("down", "up", "wheel"):
             return False
 
         candidates = [
