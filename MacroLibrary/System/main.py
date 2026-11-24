@@ -71,15 +71,14 @@ class Sys:
         print("active window:" , win)
         if cls.appId != None and (win != None and str(win) != cls.appId): state = False
 
+        # Binds now own their own enabled flag; connections no longer suppress
+        # events wholesale, so there is no second pass to keep in sync.
         for e in cls.callbinds:
-            if e in cls.sysbinds: e.toggle(True); continue
+            if e in cls.sysbinds: continue
             e.toggle(state)
-        
-        for id , c in Input.Connection.dict.items():
-            c.toggle(state)
-        
-        if not state:
-            for b in cls.sysbinds: Input.Connection.get(b.input[0]).toggle(True)
+
+        # System binds stay enabled so F1 can always re-enable the system.
+        for b in cls.sysbinds: b.toggle(True)
 
         cls.state.update(state)
         print("-- system " + ("enabled" if cls.state() else "disabled") + " --")
@@ -131,20 +130,20 @@ class Sys:
 
                     for (input , call) in f:
                         print("        " + call.__name__ + ":" , input)
-                        Input.Bind(input , call)
+                        cls.callbinds.add(Input.Bind(input , call))
 
         Input.hook()
         for e in cls.sysbinds: e.toggle(True)
 
         cls.loaded = True
-        cls.toggle(False)
+        cls.toggle(True)
         print("loading finished")
 
     @classmethod
     def exit(cls) -> bool:
         if not cls.loaded: return False
         cls.toggle(False)
-        Input.unhook()
+        Input.shutdown()
         print("-- system exit --")
         exitEvent.set()
         cls.loaded = False
@@ -166,9 +165,9 @@ class Sys:
 
     
 # sys binds
-Sys.sysbinds.add(Input.Bind("F12" , lambda id : Sys.exit()))
-Sys.sysbinds.add(Input.Bind("F1" , lambda id : Sys.toggle()))
-Sys.sysbinds.add(Input.Bind("F2" , lambda id: Sys.toggle(False)))
+Sys.sysbinds.add(Input.Bind("F12" , lambda id : Sys.exit() , always=True))
+Sys.sysbinds.add(Input.Bind("F1" , lambda id : Sys.toggle() , always=True))
+Sys.sysbinds.add(Input.Bind("F2" , lambda id: Sys.toggle(False) , always=True))
 
 
 __all__ = ["Sys" , "config"]

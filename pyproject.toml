@@ -7,8 +7,6 @@ name = "MacroLibrary"
 dynamic = ["version"]
 dependencies = [
     "requests>=2.31.0",
-    "keyboard",
-    "mouse",
     "pygetwindow",
     "evdev; sys_platform == 'linux'",
 ]
