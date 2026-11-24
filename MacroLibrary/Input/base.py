@@ -146,11 +146,10 @@ def _send(input : InputSig , state : bool | None = None , rebinding : bool = Fal
                 if re.search(r" down| up" , i) != None: continue
                 _send(i + " up" , rebinding=rebinding)
     elif isinstance(input , str):
-        if isInput(input):
-            i = normalize(input)
-            
+        i = normalize(input)
+        if isInput(i):
             sm = re.search(r" down | up" , input)
-            if state == None and sm != None: state = {" down":True," up":False}.get(sm.string)
+            if state == None and sm != None: state = {" down":True," up":False}.get(sm[0])
 
             if stateDelay != None:
                 _send(input , not state)
