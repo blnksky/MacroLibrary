@@ -430,9 +430,12 @@ class InputConnection(Set[Bind]):
 ## Input Hook
 inputhook = None
 def inputHandler(event : uin.InputEvent):
+    if (
+        event.injected
+        or event.id == "mousemove"
+    ): return False
+    
     try:
-        if event.id == "mousemove": return False
-
         id = event.id
         c = InputConnection.get(id)
         if not c.enabled: return False

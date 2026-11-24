@@ -38,8 +38,10 @@ WM_XBUTTONUP = 0x020C
 
 LLKHF_EXTENDED = 0x01
 LLKHF_INJECTED = 0x10
+LLKHF_LOWER_IL_INJECTED = 0x02
 
 LLMHF_INJECTED = 0x01
+LLMHF_LOWER_IL_INJECTED = 0x02
 
 INPUT_KEYBOARD = 1
 INPUT_MOUSE = 0
@@ -358,7 +360,9 @@ def _keyboard_callback(nCode, wParam, lParam):
                 event_type="down" if down else "up",
                 scan_code=data.scanCode,
                 vk_code=data.vkCode,
-                injected=bool(data.flags & LLMHF_INJECTED),
+                injected=bool(
+                    data.flags & (LLKHF_INJECTED | LLKHF_LOWER_IL_INJECTED)
+                ),
             )
 
             if _dispatch(event):
@@ -405,7 +409,9 @@ def _mouse_callback(nCode, wParam, lParam):
                     if wParam in (WM_MOUSEWHEEL, WM_MOUSEHWHEEL)
                     else None
                 ),
-                injected=bool(data.flags & LLKHF_INJECTED),
+                injected=bool(
+                    data.flags & (LLMHF_INJECTED | LLMHF_LOWER_IL_INJECTED)
+                ),
             )
 
             if _dispatch(event):
