@@ -9,6 +9,7 @@ dependencies = [
     "requests>=2.31.0",
     "pygetwindow",
     "evdev; sys_platform == 'linux'",
+    "ahk",
 ]
 
 [tool.setuptools_scm]

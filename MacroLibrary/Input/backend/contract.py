@@ -15,11 +15,14 @@ from typing import Callable
 from .. import keymap
 from ..events import InputEvent
 
+import ahk
+
 __all__ = ["Backend"]
 
 
 class Backend(ABC):
     IIDS = keymap.IIDS
+    AHK = ahk.AHK()
 
     def __init__(self) -> None:
         self._held: set[str] = set()
@@ -44,7 +47,9 @@ class Backend(ABC):
                 return
             self._held.add(key)
         try:
-            self._press(s)
+            # preliminary ahk wrapper alternative
+            #self._press(s)
+            self.AHK.send_input("{" + f"{identifier} down" + "}")
         except BaseException:
             with self._lock:
                 self._held.discard(key)
@@ -61,6 +66,9 @@ class Backend(ABC):
             if key not in self._held:
                 return
             self._held.discard(key)
+
+            # preliminary ahk wrapper alternative
+            self.AHK.send_input("{" + f"{identifier} up" + "}")
         self._release(s)
 
     def hold(self, identifier: str) -> None:
