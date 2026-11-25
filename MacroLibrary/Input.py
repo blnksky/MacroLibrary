@@ -146,6 +146,7 @@ def get(id : InputId):
     id = normalize(id)
     #AHK.key_state(key_name = id.upper() , mode = "P") != 0
     v = inputStates.get(id)
+    if not id in InputConnection.dict: InputConnection.get(id)
     return v != None and v > 0
 
 def update(id : InputId , incr : int):
@@ -552,7 +553,9 @@ def buffer(inp : InputSig , duration : int | None = None , interval : int | None
 
 
 # launch setup
-for id in INPUT_IDS: InputConnection.get(id)
+for id in INPUT_IDS - {
+    "WheelDown", "WheelUp", "WheelLeft", "WheelRight",
+}: InputConnection.get(id)
 
 
 Connection = InputConnection
