@@ -86,6 +86,7 @@ _BUTTON_FLAGS = {
 }
 _XBUTTON_DATA = {"xbutton1": 1, "xbutton2": 2}
 
+
 _MOUSE_DOWN = {
     WM_LBUTTONDOWN: ("lbutton", "down"),
     WM_LBUTTONUP: ("lbutton", "up"),
@@ -94,7 +95,6 @@ _MOUSE_DOWN = {
     WM_MBUTTONDOWN: ("mbutton", "down"),
     WM_MBUTTONUP: ("mbutton", "up"),
 }
-
 
 def _win_error(message: str) -> OSError:
     return ctypes.WinError(ctypes.get_last_error())
@@ -110,7 +110,7 @@ class WindowsBackend(Backend):
         self._lifecycle_lock = threading.RLock()
         self._kb_proc = HOOKPROC(self._keyboard_callback)
         self._ms_proc = HOOKPROC(self._mouse_callback)
-
+    
     # ------------------------------------------------------------------
     # Injection
     # ------------------------------------------------------------------
@@ -122,7 +122,7 @@ class WindowsBackend(Backend):
         if sent != len(inputs):
             raise _win_error("SendInput failed")
 
-    def _key_input(self, spec: keymap.KeySpec, up: bool) -> INPUT:
+    def _key_input(self, spec, up):
         vk = spec.vk
 
         if not vk:
@@ -150,20 +150,6 @@ class WindowsBackend(Backend):
                 time=0,
                 dwExtraInfo=MLIB_TAG,
             ),
-        )
-
-    def _key_input_old(self, spec: keymap.KeySpec, up: bool) -> INPUT:
-        vk = spec.vk
-        if not vk:
-            raise ValueError(f"No virtual-key code for {spec.id!r}")
-
-        flags = KEYEVENTF_EXTENDEDKEY if spec.extended else 0
-        if up:
-            flags |= KEYEVENTF_KEYUP
-
-        return INPUT(
-            type=INPUT_KEYBOARD,
-            ki=KEYBDINPUT(wVk=vk, wScan=0, dwFlags=flags, time=0, dwExtraInfo=MLIB_TAG),
         )
 
     def _mouse_input(self, flags: int, dx: int = 0, dy: int = 0, data: int = 0) -> INPUT:
