@@ -29,12 +29,14 @@ from ._win32 import (
     KEYEVENTF_EXTENDEDKEY,
     KEYEVENTF_KEYUP,
     KEYEVENTF_UNICODE,
+    KEYEVENTF_SCANCODE,
     LLKHF_EXTENDED,
     LLKHF_INJECTED,
     LLKHF_LOWER_IL_INJECTED,
     LLMHF_INJECTED,
     LLMHF_LOWER_IL_INJECTED,
     MLIB_TAG,
+    MAPVK_VK_TO_VSC_EX,
     MOUSEINPUT,
     MOUSEEVENTF_HWHEEL,
     MOUSEEVENTF_LEFTDOWN,
@@ -121,6 +123,36 @@ class WindowsBackend(Backend):
             raise _win_error("SendInput failed")
 
     def _key_input(self, spec: keymap.KeySpec, up: bool) -> INPUT:
+        vk = spec.vk
+
+        if not vk:
+            raise ValueError(f"No virtual-key code for {spec.id!r}")
+
+        scan = user32.MapVirtualKeyW(vk, MAPVK_VK_TO_VSC_EX)
+
+        if not scan:
+            raise ValueError(f"Could not map scan code for {spec.id!r}")
+
+        flags = KEYEVENTF_SCANCODE
+
+        if spec.extended:
+            flags |= KEYEVENTF_EXTENDEDKEY
+
+        if up:
+            flags |= KEYEVENTF_KEYUP
+
+        return INPUT(
+            type=INPUT_KEYBOARD,
+            ki=KEYBDINPUT(
+                wVk=0,
+                wScan=scan & 0xFF,
+                dwFlags=flags,
+                time=0,
+                dwExtraInfo=MLIB_TAG,
+            ),
+        )
+
+    def _key_input_old(self, spec: keymap.KeySpec, up: bool) -> INPUT:
         vk = spec.vk
         if not vk:
             raise ValueError(f"No virtual-key code for {spec.id!r}")
