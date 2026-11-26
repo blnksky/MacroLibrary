@@ -10,7 +10,6 @@ OS hook thread well below Windows' ``LowLevelHooksTimeout``.
 
 from __future__ import annotations
 
-import queue
 import threading
 import traceback
 from typing import Callable
@@ -21,40 +20,64 @@ __all__ = ["Dispatcher", "Worker"]
 
 
 class Worker:
-    """Tiny callback executor used so user code never runs on the hook thread."""
+    """
+    Callback executor used so user code never runs on the hook thread.
 
-    def __init__(self, count: int = 2) -> None:
-        self._queue: "queue.Queue[Callable[[], None]]" = queue.Queue()
-        self._threads = [
-            threading.Thread(target=self._loop, name=f"input-worker-{i}", daemon=True)
-            for i in range(max(1, count))
-        ]
-        for thread in self._threads:
-            thread.start()
+    One short-lived daemon thread per callback. User callbacks routinely block
+    for the whole duration of a key hold (``Input.wait``, ``while
+    Input.get(...)``, buffered repeats), so a fixed-size pool would make every
+    other bind -- including system binds such as F2/F12 -- wait behind a held
+    movement key. This mirrors the historical ``Bind`` behaviour: matching and
+    suppression stay on the hook thread, execution never does.
+    """
 
-    def _loop(self) -> None:
-        while True:
-            job = self._queue.get()
-            if job is None:
-                return
-            try:
-                job()
-            except Exception:
-                traceback.print_exc()
-            finally:
-                self._queue.task_done()
+    def __init__(self, count: int | None = None) -> None:
+        # ``count`` is accepted for backwards compatibility and ignored.
+        self._lock = threading.RLock()
+        self._idle = threading.Condition(self._lock)
+        self._threads: set[threading.Thread] = set()
+        self._active = 0
+        self._stopped = False
+
+    def _run(self, job: Callable[[], None]) -> None:
+        try:
+            job()
+        except Exception:
+            traceback.print_exc()
+        finally:
+            with self._lock:
+                self._active -= 1
+                self._threads.discard(threading.current_thread())
+                self._idle.notify_all()
 
     def submit(self, job: Callable[[], None]) -> None:
-        self._queue.put(job)
+        with self._lock:
+            if self._stopped:
+                return
+            thread = threading.Thread(
+                target=self._run, args=(job,), name="input-callback", daemon=True
+            )
+            self._threads.add(thread)
+            self._active += 1
+
+        try:
+            thread.start()
+        except RuntimeError:
+            # Interpreter shutdown or thread exhaustion: never break the hook.
+            with self._lock:
+                self._active -= 1
+                self._threads.discard(thread)
+                self._idle.notify_all()
+            traceback.print_exc()
 
     def drain(self, timeout: float = 2.0) -> bool:
-        """Wait until every queued job finished (tests / shutdown)."""
-        self._queue.join()
-        return True
+        """Wait up to ``timeout`` seconds for running callbacks to finish."""
+        with self._lock:
+            return self._idle.wait_for(lambda: self._active == 0, timeout)
 
     def stop(self) -> None:
-        for _ in self._threads:
-            self._queue.put(None)
+        with self._lock:
+            self._stopped = True
 
 
 class Dispatcher:

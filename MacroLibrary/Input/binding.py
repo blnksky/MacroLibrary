@@ -159,8 +159,26 @@ class Registry:
 
     def register(self, bind: Bind) -> Bind:
         with self._lock:
+            # Overlapping blocking binds: the newest one wins, matching the
+            # old ``InputConnection.add`` behaviour. Only blocking -> blocking
+            # collisions are replaced, and the event state is part of the key,
+            # so rebind() pairs and "~w" + "w" combinations keep working.
+            if bind.block:
+                key = (bind.input, bind.state)
+                stale = [
+                    b for b in self._binds
+                    if b is not bind and b.block and (b.input, b.state) == key
+                ]
+                for old in stale:
+                    self._binds.remove(old)
+                    for i in set(old.input):
+                        conn = Connection.dict.get(i)
+                        if conn is not None:
+                            conn.discard(old)
+
             if bind not in self._binds:
                 self._binds.append(bind)
+
         for i in bind.input:
             Connection.get(i).add(bind)
         return bind
@@ -211,6 +229,12 @@ class Registry:
         if event.injected or event.event_type not in ("down", "up", "wheel"):
             return False
 
+        # OS auto-repeat of a press whose original down was consumed by a
+        # blocking bind. Keep suppressing it: otherwise the target app would
+        # suddenly start receiving the key mid-hold even though it never saw
+        # the initial down, leaving it stuck when the key is released.
+        repeat = event.event_type == "down" and event.id in self._consumed_down
+
         candidates = [
             b for b in self.binds()
             if (active or b.always) and b.matches(event, state)
@@ -220,17 +244,21 @@ class Registry:
 
         consumed = False
         for bind in candidates:
-            bind.fire(event, submit)
             if bind.block:
+                if consumed:
+                    # A longer/more specific blocking bind already handled
+                    # this event: do not fall through to shorter combinations.
+                    continue
                 consumed = True
+            bind.fire(event, submit)
 
         if event.event_type == "wheel":
             return consumed
 
         if event.event_type == "down":
-            if consumed:
+            if consumed or repeat:
                 self._consumed_down.add(event.id)
-            return consumed
+            return consumed or repeat
 
         if event.id in self._consumed_down:
             self._consumed_down.discard(event.id)

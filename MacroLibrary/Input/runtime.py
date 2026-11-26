@@ -194,27 +194,35 @@ class InputRuntime:
         if not sig.ids:
             raise ValueError("Cannot rebind literal text.")
 
+        # ``~`` passthrough must survive the re-bind; ``sig.ids`` no longer
+        # carries the marker, so the block flag is passed explicitly.
+        block = not sig.passthrough
+        out_sig = keymap.parse(output)
+
+        # Literal text and explicit " down"/" up" inputs tap the output once,
+        # matching the historical implementation.
+        if out_sig.text is not None or sig.state is not None:
+            def on_tap(event_id: str) -> None:
+                self.send(output)
+
+            return self.bind(input, on_tap, block=block)
+
+        # A plain key rebind mirrors the output's pressed/released state for as
+        # long as the input is held.
         def on_down(event_id: str) -> None:
             self.send(output, True)
 
         def on_up(event_id: str) -> None:
             self.send(output, False)
 
-        binds: list[Bind] = []
-        if sig.state in (None, True):
-            binds.append(self.bind(sig.ids, on_down))
-        if sig.state in (None, False):
-            binds.append(self.bind(", ".join(sig.ids) + " up", on_up))
+        down = self.bind(sig.ids, on_down, block=block)
+        up = self.bind(", ".join(sig.ids) + " up", on_up, block=block)
+        down.pair = up
 
-        if sig.state is None:
-            out_sig = keymap.parse(output)
-            if out_sig.ids:
-                self.remaps[sig.ids] = out_sig.ids
+        if out_sig.ids:
+            self.remaps[sig.ids] = out_sig.ids
 
-        if len(binds) == 2:
-            binds[0].pair = binds[1]
-
-        return binds[0]
+        return down
 
     def bind_buffer(self, inp, duration: int | None = None, interval: int | None = None) -> Bind:
         duration = self.bufferDuration if duration is None else duration
