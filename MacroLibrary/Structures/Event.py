@@ -3,44 +3,6 @@ import inspect
 
 P = ParamSpec("P")
 class Event(Generic[P]):
-    guard : Callable[P , bool | None]
-    _callsig : inspect.Signature
-    _connections : Set[Connection[P]]
-    _synced : List[Connection[P]]
-    _tEvent : threading.Event
-    _buffer : Dict[Thread , Tuple[Any , ...] | None]
-
-    def __init__(self , guard : Callable[P , bool | None] = lambda *args : True) -> None:
-        self.guard = guard
-        self._callsig = inspect.signature(guard)
-        self._synced = []
-        self._connections = set()
-        self._tEvent = threading.Event()
-        self._buffer = {}
-
-    def __call__(self, *args : P.args , **kwargs : P.kwargs) -> bool:
-        bound = self._callsig.bind_partial(*args , **kwargs); bound.apply_defaults()
-        args = bound.args; kwargs = bound.kwargs
-        if not self.guard(*args , **kwargs) : return False
-        
-        for t , v in self._buffer.items():
-            if v != None : continue
-            self._buffer[t] = args
-
-        for c in self._synced.copy(): c(*args , **kwargs)
-        for c in self._connections.copy():
-            threading.Thread(
-                target=c.__call__,
-                args=args,
-                kwargs=kwargs,
-            ).start()
-        
-        self._tEvent.set()
-        self._tEvent.wait()
-        self._tEvent.clear()
-        
-        return True
-
     class Connection(Generic[P]):
         call : Callable[P]
         event : Event[P]
@@ -106,19 +68,58 @@ class Event(Generic[P]):
         return con
 
     def wait(self , timeout : int | None = None , value : Any | None = None) -> Any:
-        """
-        Yield current thread until either timeout or an event, returning the arguments of the event call or false on timeout. Returns true instead if specified value is received.
-        """
+            """
+            Yield current thread until either timeout or an event, returning the arguments of the event call or false on timeout. Returns true instead if specified value is received.
+            """
+    
+            thread = threading.current_thread()
+            self._buffer[thread] = None
+    
+            while True:
+                if not self._tEvent.wait((timeout / 1000) if timeout != None else None): return False
+                if value == None or self._buffer[thread] != value: break
+    
+            args = self._buffer.pop(thread)
+            return True if value != None else None if args == None or len(args) == 0 else args[0] if len(args) == 1 else args
+    
 
-        thread = threading.current_thread()
-        self._buffer[thread] = None
+    guard : Callable[P , bool | None]
+    _callsig : inspect.Signature
+    _connections : Set[Connection[P]]
+    _synced : List[Connection[P]]
+    _tEvent : threading.Event
+    _buffer : Dict[Thread , Tuple[Any , ...] | None]
 
-        while True:
-            if not self._tEvent.wait((timeout / 1000) if timeout != None else None): return False
-            if value == None or self._buffer[thread] != value: break
 
-        args = self._buffer.pop(thread)
-        return True if value != None else None if args == None or len(args) == 0 else args[0] if len(args) == 1 else args
+    def __init__(self , guard : Callable[P , bool | None] = lambda *args : True) -> None:
+        self.guard = guard
+        self._callsig = inspect.signature(guard)
+        self._synced = []
+        self._connections = set()
+        self._tEvent = threading.Event()
+        self._buffer = {}
 
+    def __call__(self, *args : P.args , **kwargs : P.kwargs) -> bool:
+        bound = self._callsig.bind_partial(*args , **kwargs); bound.apply_defaults()
+        args = bound.args; kwargs = bound.kwargs
+        if not self.guard(*args , **kwargs) : return False
+        
+        for t , v in self._buffer.items():
+            if v != None : continue
+            self._buffer[t] = args
+
+        for c in self._synced.copy(): c(*args , **kwargs)
+        for c in self._connections.copy():
+            threading.Thread(
+                target=c.__call__,
+                args=args,
+                kwargs=kwargs,
+            ).start()
+        
+        self._tEvent.set()
+        self._tEvent.wait()
+        self._tEvent.clear()
+        
+        return True
 
 __all__ = ["Event"]

@@ -6,7 +6,7 @@ G = TypeVar("G" , int , bool)
 class State(Event[bool] , Generic[T]):
     value : bool
     counter : int
-    update : Event[int]
+    update : Event[int | None]
     buffer : int | None
     
     _prevState_ : bool
@@ -31,7 +31,9 @@ class State(Event[bool] , Generic[T]):
     def _update(self , increment : T | None = None):
         value = self.value
 
-        if not isinstance(increment , type(self.counter)):
+        if increment == None:
+            pass
+        elif not isinstance(increment , type(self.counter)):
             raise TypeError(f"arg must be {type(self.counter).__name__}, got {type(increment).__name__}")
         if isinstance(increment , bool):
             value = increment
