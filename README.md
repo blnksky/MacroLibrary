@@ -832,7 +832,7 @@ with `Sys.bind`:
 |---|---|
 | `config.update({...})` | `Sys.config.update({...})` |
 | `config["appId"]` | `Sys.config["appId"]` |
-| `Sys.bind(category, input, call)` | `Sys.bind(input, call, category=category)` |
+| `Sys.bind(input, call, category=category)` |
 | `from MacroLibrary import *` exports `config` | only `Sys.config`; there is no module-level `config` |
 
 The category argument moved from the first to the last position, and the
