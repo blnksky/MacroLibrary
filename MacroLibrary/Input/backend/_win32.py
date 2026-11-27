@@ -184,3 +184,19 @@ user32.PostThreadMessageW.restype = wintypes.BOOL
 
 kernel32.GetCurrentThreadId.argtypes = []
 kernel32.GetCurrentThreadId.restype = wintypes.DWORD
+
+user32.GetKeyboardLayout.argtypes = [wintypes.DWORD]
+user32.GetKeyboardLayout.restype = ctypes.c_void_p
+
+user32.VkKeyScanExW.argtypes = [
+    wintypes.WCHAR,
+    ctypes.c_void_p,
+]
+user32.VkKeyScanExW.restype = ctypes.c_short
+
+user32.MapVirtualKeyExW.argtypes = [
+    wintypes.UINT,
+    wintypes.UINT,
+    ctypes.c_void_p,
+]
+user32.MapVirtualKeyExW.restype = wintypes.UINT

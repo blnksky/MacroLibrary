@@ -245,6 +245,13 @@ _NUMPAD_ALIASES = {
 }
 _ALIASES.update(_NUMPAD_ALIASES)
 
+# --- additional layout-dependent keys -------------------------------------
+_add("circumflex", vk=0xDE, linux="KEY_GRAVE", aliases=("deadcircumflex",))
+_add("umlaut", vk=0xDE, linux="KEY_APOSTROPHE" , extended=True)
+_add("less", vk=0xE2, linux="KEY_102ND", aliases=("oem_102",))
+_add("´", vk=0xDD, linux="KEY_APOSTROPHE", aliases=("deadacute", "acute"))
+_add("ß", vk=0xDB, linux="KEY_MINUS")
+
 # --- mouse buttons --------------------------------------------------------
 _add("lbutton", kind="button", linux="BTN_LEFT", aliases=("leftbutton",))
 _add("rbutton", kind="button", linux="BTN_RIGHT", aliases=("rightbutton",))

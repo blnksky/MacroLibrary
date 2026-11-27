@@ -215,7 +215,7 @@ class InputRuntime:
         def on_up(event_id: str) -> None:
             self.send(output, False)
 
-        down = self.bind(sig.ids, on_down, block=block)
+        down = self.bind(", ".join(sig.ids) + " down", on_down, block=block)
         up = self.bind(", ".join(sig.ids) + " up", on_up, block=block)
         down.pair = up
 

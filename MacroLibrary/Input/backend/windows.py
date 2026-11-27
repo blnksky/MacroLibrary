@@ -29,12 +29,14 @@ from ._win32 import (
     KEYEVENTF_EXTENDEDKEY,
     KEYEVENTF_KEYUP,
     KEYEVENTF_UNICODE,
+    KEYEVENTF_SCANCODE,
     LLKHF_EXTENDED,
     LLKHF_INJECTED,
     LLKHF_LOWER_IL_INJECTED,
     LLMHF_INJECTED,
     LLMHF_LOWER_IL_INJECTED,
     MLIB_TAG,
+    MAPVK_VK_TO_VSC_EX,
     MOUSEINPUT,
     MOUSEEVENTF_HWHEEL,
     MOUSEEVENTF_LEFTDOWN,
@@ -84,6 +86,7 @@ _BUTTON_FLAGS = {
 }
 _XBUTTON_DATA = {"xbutton1": 1, "xbutton2": 2}
 
+
 _MOUSE_DOWN = {
     WM_LBUTTONDOWN: ("lbutton", "down"),
     WM_LBUTTONUP: ("lbutton", "up"),
@@ -92,7 +95,6 @@ _MOUSE_DOWN = {
     WM_MBUTTONDOWN: ("mbutton", "down"),
     WM_MBUTTONUP: ("mbutton", "up"),
 }
-
 
 def _win_error(message: str) -> OSError:
     return ctypes.WinError(ctypes.get_last_error())
@@ -108,7 +110,7 @@ class WindowsBackend(Backend):
         self._lifecycle_lock = threading.RLock()
         self._kb_proc = HOOKPROC(self._keyboard_callback)
         self._ms_proc = HOOKPROC(self._mouse_callback)
-
+    
     # ------------------------------------------------------------------
     # Injection
     # ------------------------------------------------------------------
@@ -120,18 +122,34 @@ class WindowsBackend(Backend):
         if sent != len(inputs):
             raise _win_error("SendInput failed")
 
-    def _key_input(self, spec: keymap.KeySpec, up: bool) -> INPUT:
+    def _key_input(self, spec, up):
         vk = spec.vk
+
         if not vk:
             raise ValueError(f"No virtual-key code for {spec.id!r}")
 
-        flags = KEYEVENTF_EXTENDEDKEY if spec.extended else 0
+        scan = user32.MapVirtualKeyW(vk, MAPVK_VK_TO_VSC_EX)
+
+        if not scan:
+            raise ValueError(f"Could not map scan code for {spec.id!r}")
+
+        flags = KEYEVENTF_SCANCODE
+
+        if spec.extended:
+            flags |= KEYEVENTF_EXTENDEDKEY
+
         if up:
             flags |= KEYEVENTF_KEYUP
 
         return INPUT(
             type=INPUT_KEYBOARD,
-            ki=KEYBDINPUT(wVk=vk, wScan=0, dwFlags=flags, time=0, dwExtraInfo=MLIB_TAG),
+            ki=KEYBDINPUT(
+                wVk=0,
+                wScan=scan & 0xFF,
+                dwFlags=flags,
+                time=0,
+                dwExtraInfo=MLIB_TAG,
+            ),
         )
 
     def _mouse_input(self, flags: int, dx: int = 0, dy: int = 0, data: int = 0) -> INPUT:
